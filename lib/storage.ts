@@ -23,32 +23,79 @@ function safeSet<T>(key: string, value: T): void {
   }
 }
 
+// Notifiera UI direkt efter ändring så ringar/badges hänger med
+function emit(event: string) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(event));
+}
+
 // XP & streak
 export interface ProgressState {
   xp: number;
   streakDays: number;
   lastActiveDate: string; // YYYY-MM-DD
+  todayXp: number;        // XP intjänad idag (för dagligt mål)
+  todayDate: string;      // YYYY-MM-DD som todayXp gäller
+  freezes: number;        // Streak-freeze, +1 per 5-dagars-streak
+  lastFreezeAwardAt: number; // Streak-värde då vi senast delade ut freeze
 }
 
+const DEFAULT_PROGRESS: ProgressState = {
+  xp: 0,
+  streakDays: 0,
+  lastActiveDate: "",
+  todayXp: 0,
+  todayDate: "",
+  freezes: 0,
+  lastFreezeAwardAt: 0,
+};
+
 export function getProgress(): ProgressState {
-  return safeGet<ProgressState>("progress", { xp: 0, streakDays: 0, lastActiveDate: "" });
+  return { ...DEFAULT_PROGRESS, ...safeGet<ProgressState>("progress", DEFAULT_PROGRESS) };
 }
 
 export function addXP(amount: number): ProgressState {
   const today = new Date().toISOString().slice(0, 10);
   const cur = getProgress();
   let streak = cur.streakDays;
+  let freezes = cur.freezes;
+  let lastFreezeAwardAt = cur.lastFreezeAwardAt;
+
   if (cur.lastActiveDate !== today) {
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-    streak = cur.lastActiveDate === yesterday ? streak + 1 : 1;
+    if (cur.lastActiveDate === yesterday) {
+      streak = streak + 1;
+    } else if (cur.lastActiveDate && freezes > 0) {
+      // Vi missade en dag men har en freeze — använd den, behåll streak
+      freezes -= 1;
+      streak = streak + 1; // freeze räknas som om vi var aktiva igår
+    } else {
+      streak = 1;
+    }
   }
   if (streak === 0) streak = 1;
+
+  // Belöna +1 freeze varje gång streaken passerar en ny multipel av 5
+  const tier = Math.floor(streak / 5);
+  const lastTier = Math.floor(lastFreezeAwardAt / 5);
+  if (tier > lastTier) {
+    freezes += tier - lastTier;
+    lastFreezeAwardAt = streak;
+  }
+
+  const todayXp = cur.todayDate === today ? cur.todayXp + amount : amount;
+
   const next: ProgressState = {
     xp: cur.xp + amount,
     streakDays: streak,
     lastActiveDate: today,
+    todayXp,
+    todayDate: today,
+    freezes,
+    lastFreezeAwardAt,
   };
   safeSet("progress", next);
+  emit("fluentic:progress-changed");
   return next;
 }
 
@@ -104,4 +151,136 @@ export function addScheduledLesson(lesson: Omit<ScheduledLesson, "id">): Schedul
 
 export function removeScheduledLesson(id: string): void {
   setSchedule(getSchedule().filter((l) => l.id !== id));
+}
+
+// ===== Gamification =====
+
+// Dagligt mål — användaren väljer 10/20/50 XP per dag
+const DAILY_GOAL_KEY = "fluentic.dailyGoal";
+
+export function getDailyGoal(): number {
+  if (typeof window === "undefined") return 20;
+  try {
+    const v = window.localStorage.getItem(DAILY_GOAL_KEY);
+    const n = v ? parseInt(v, 10) : NaN;
+    return Number.isFinite(n) && n > 0 ? n : 20;
+  } catch {
+    return 20;
+  }
+}
+
+export function setDailyGoal(goal: number): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(DAILY_GOAL_KEY, String(goal));
+    emit("fluentic:progress-changed");
+  } catch {
+    // ignorera
+  }
+}
+
+export function hasOnboarded(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    return window.localStorage.getItem("fluentic.onboarded") === "1";
+  } catch {
+    return true;
+  }
+}
+
+export function markOnboarded(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem("fluentic.onboarded", "1");
+  } catch {
+    // ignorera
+  }
+}
+
+// Hjärtan — 5 max, regen 1/30 min
+const HEARTS_KEY = "fluentic.hearts";
+const HEARTS_MAX = 5;
+const HEARTS_REGEN_MS = 30 * 60 * 1000;
+
+interface HeartsState {
+  count: number;
+  lastChangedAt: number;
+}
+
+function readHearts(): HeartsState {
+  if (typeof window === "undefined") return { count: HEARTS_MAX, lastChangedAt: Date.now() };
+  try {
+    const raw = window.localStorage.getItem(HEARTS_KEY);
+    if (!raw) return { count: HEARTS_MAX, lastChangedAt: Date.now() };
+    const parsed = JSON.parse(raw) as HeartsState;
+    return { count: parsed.count ?? HEARTS_MAX, lastChangedAt: parsed.lastChangedAt ?? Date.now() };
+  } catch {
+    return { count: HEARTS_MAX, lastChangedAt: Date.now() };
+  }
+}
+
+function writeHearts(s: HeartsState): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(HEARTS_KEY, JSON.stringify(s));
+    emit("fluentic:hearts-changed");
+  } catch {
+    // ignorera
+  }
+}
+
+export function getHearts(): { count: number; nextRegenInMs: number } {
+  const s = readHearts();
+  if (s.count >= HEARTS_MAX) return { count: HEARTS_MAX, nextRegenInMs: 0 };
+  const elapsed = Date.now() - s.lastChangedAt;
+  const regened = Math.floor(elapsed / HEARTS_REGEN_MS);
+  if (regened > 0) {
+    const newCount = Math.min(HEARTS_MAX, s.count + regened);
+    const newLast = s.lastChangedAt + regened * HEARTS_REGEN_MS;
+    writeHearts({ count: newCount, lastChangedAt: newLast });
+    if (newCount >= HEARTS_MAX) return { count: HEARTS_MAX, nextRegenInMs: 0 };
+    return { count: newCount, nextRegenInMs: HEARTS_REGEN_MS - (Date.now() - newLast) };
+  }
+  return { count: s.count, nextRegenInMs: HEARTS_REGEN_MS - elapsed };
+}
+
+export function loseHeart(): number {
+  const s = readHearts();
+  // Trigga regen-uträkning först så vi inte tappar hjärtan vi egentligen återfick
+  getHearts();
+  const cur = readHearts();
+  const next = Math.max(0, cur.count - 1);
+  writeHearts({ count: next, lastChangedAt: Date.now() });
+  return next;
+}
+
+export function refillHearts(): void {
+  writeHearts({ count: HEARTS_MAX, lastChangedAt: Date.now() });
+}
+
+// Lektionspath — vilka lektioner användaren har klarat
+const LESSONS_KEY_PREFIX = "fluentic.lessons.";
+
+export function getCompletedLessons(lang: LangCode): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const v = window.localStorage.getItem(LESSONS_KEY_PREFIX + lang);
+    return v ? (JSON.parse(v) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function markLessonCompleted(lang: LangCode, lessonId: string): void {
+  if (typeof window === "undefined") return;
+  const list = getCompletedLessons(lang);
+  if (!list.includes(lessonId)) {
+    list.push(lessonId);
+    try {
+      window.localStorage.setItem(LESSONS_KEY_PREFIX + lang, JSON.stringify(list));
+      emit("fluentic:lessons-changed");
+    } catch {
+      // ignorera
+    }
+  }
 }

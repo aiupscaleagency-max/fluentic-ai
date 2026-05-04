@@ -6,31 +6,13 @@ import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Mic, MicOff, Volume2, ArrowLeftRight, Loader2, MessagesSquare } from "lucide-react";
+import { getLevel } from "@/lib/level";
+import { isValidLangCode } from "@/lib/languages";
 
 // Tolken stödjer även "sv" som käll- och målspråk utöver MVP-fyran
 type TranslatorLang = "sv" | "es" | "en" | "fr" | "ar";
 
-type SRResult = {
-  results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }>;
-  resultIndex: number;
-};
-type SRInstance = {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  start: () => void;
-  stop: () => void;
-  onresult: ((e: SRResult) => void) | null;
-  onerror: ((e: { error: string }) => void) | null;
-  onend: (() => void) | null;
-};
-type SRConstructor = new () => SRInstance;
-declare global {
-  interface Window {
-    SpeechRecognition?: SRConstructor;
-    webkitSpeechRecognition?: SRConstructor;
-  }
-}
+import { getSpeechRecognitionCtor, type SRInstance } from "@/lib/speech";
 
 interface TranslateResp {
   translation?: string;
@@ -64,8 +46,7 @@ export function Translator() {
   const toMeta = allTo.find((l) => l.code === to)!;
 
   function ensureRecognizer(langBcp47: string) {
-    if (typeof window === "undefined") return null;
-    const Ctor = window.SpeechRecognition ?? window.webkitSpeechRecognition;
+    const Ctor = getSpeechRecognitionCtor();
     if (!Ctor) return null;
     const rec = new Ctor();
     rec.lang = langBcp47;
@@ -109,10 +90,12 @@ export function Translator() {
     setError(null);
     setOut(null);
     try {
+      // Anpassa nivå efter målspråket om vi översätter TILL ett av Fluentics språk
+      const level = isValidLangCode(tg) ? getLevel(tg) : null;
       const res = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: t, from: f, to: tg }),
+        body: JSON.stringify({ text: t, from: f, to: tg, level }),
       });
       const data = (await res.json()) as TranslateResp;
       if (!res.ok || !data.translation) {

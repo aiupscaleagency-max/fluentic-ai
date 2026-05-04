@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
+import { MODEL } from "@/lib/llm";
+import { CEFR_LEVELS, levelGuidance, type CefrLevel } from "@/lib/level";
 
 export const runtime = "nodejs";
 
@@ -7,9 +9,8 @@ interface TranslateBody {
   text: string;
   from: string;
   to: string;
+  level?: string;
 }
-
-const MODEL = "claude-sonnet-4-6";
 
 // Vi tillåter "sv" + de fyra MVP-språken som källa/mål för tolken
 const ALLOWED = new Set(["sv", "es", "en", "fr", "ar"]);
@@ -52,8 +53,15 @@ export async function POST(req: Request) {
   const fromName = LANG_NAMES[body.from];
   const toName = LANG_NAMES[body.to];
   const wantsTranslit = body.to === "ar";
+  const level: CefrLevel | null = (CEFR_LEVELS as string[]).includes(body.level ?? "")
+    ? (body.level as CefrLevel)
+    : null;
+  const levelLine = level
+    ? `Adapt vocabulary, grammar, sentence length to CEFR ${level}. ${levelGuidance(level)}`
+    : "";
 
-  const system = `You are a precise translator. Output ONLY a JSON object — no prose, no markdown fences, no commentary. Schema:
+  const system = `You are a precise translator. ${levelLine}
+Output ONLY a JSON object — no prose, no markdown fences, no commentary. Schema:
 {
   "translation": string,         // The translation in ${toName}
   ${wantsTranslit ? `"transliteration": string, // Latin-script transliteration of the Arabic translation\n  ` : ""}"alternative": string         // One natural alternative phrasing in ${toName}

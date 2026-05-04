@@ -7,8 +7,9 @@ import { getVocab } from "@/lib/vocab";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { addXP } from "@/lib/storage";
+import { addXP, loseHeart } from "@/lib/storage";
 import { RotateCcw } from "lucide-react";
+import { useLevel } from "@/lib/use-level";
 
 type Tile = {
   id: string;
@@ -28,9 +29,10 @@ function shuffle<T>(arr: T[]): T[] {
 
 export function MatchGame({ lang }: { lang: LangCode }) {
   const language = getLanguage(lang)!;
+  const level = useLevel(lang);
   const [round, setRound] = React.useState(0);
   const tiles = React.useMemo<Tile[]>(() => {
-    const vocab = shuffle(getVocab(lang)).slice(0, 8);
+    const vocab = shuffle(getVocab(lang, level)).slice(0, 8);
     const pairs: Tile[] = [];
     vocab.forEach((v) => {
       pairs.push({ id: `${v.id}-sv`, pairId: v.id, label: v.sv, side: "sv" });
@@ -39,7 +41,7 @@ export function MatchGame({ lang }: { lang: LangCode }) {
     return shuffle(pairs);
     // Behöver round i deps så vi kan starta om
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang, round]);
+  }, [lang, round, level]);
 
   const [selected, setSelected] = React.useState<Tile | null>(null);
   const [matched, setMatched] = React.useState<Set<string>>(new Set());
@@ -72,6 +74,7 @@ export function MatchGame({ lang }: { lang: LangCode }) {
     } else {
       const w = new Set([selected.id, tile.id]);
       setWrong(w);
+      loseHeart();
       setTimeout(() => {
         setWrong(new Set());
         setSelected(null);

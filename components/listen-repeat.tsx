@@ -3,7 +3,8 @@
 import * as React from "react";
 import type { LangCode } from "@/lib/languages";
 import { getLanguage } from "@/lib/languages";
-import { PHRASES } from "@/lib/phrases";
+import { getPhrases } from "@/lib/phrases";
+import { useLevel } from "@/lib/use-level";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -11,32 +12,15 @@ import { Mic, MicOff, Volume2, ChevronRight } from "lucide-react";
 import { similarityScore } from "@/lib/similarity";
 import { addXP } from "@/lib/storage";
 
-// Web Speech API har inga riktiga TS-typer i lib.dom — vi deklarerar minimalt vi behöver
-type SRResult = {
-  results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }>;
-  resultIndex: number;
-};
-type SRInstance = {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  start: () => void;
-  stop: () => void;
-  onresult: ((e: SRResult) => void) | null;
-  onerror: ((e: { error: string }) => void) | null;
-  onend: (() => void) | null;
-};
-type SRConstructor = new () => SRInstance;
-
-declare global {
-  interface Window {
-    SpeechRecognition?: SRConstructor;
-    webkitSpeechRecognition?: SRConstructor;
-  }
-}
+import { getSpeechRecognitionCtor, type SRInstance } from "@/lib/speech";
 
 export function ListenRepeat({ lang }: { lang: LangCode }) {
   const language = getLanguage(lang)!;
+  const level = useLevel(lang);
+  const phrases = React.useMemo(() => {
+    const list = getPhrases(level);
+    return list.length > 0 ? list : getPhrases();
+  }, [level]);
   const [idx, setIdx] = React.useState(0);
   const [transcript, setTranscript] = React.useState("");
   const [score, setScore] = React.useState<number | null>(null);
@@ -44,12 +28,13 @@ export function ListenRepeat({ lang }: { lang: LangCode }) {
   const [supported, setSupported] = React.useState(true);
   const recRef = React.useRef<SRInstance | null>(null);
 
-  const phrase = PHRASES[idx];
+  React.useEffect(() => { setIdx(0); setTranscript(""); setScore(null); }, [phrases]);
+
+  const phrase = phrases[idx % phrases.length];
   const target = phrase.text[lang];
 
   React.useEffect(() => {
-    if (typeof window === "undefined") return;
-    const Ctor = window.SpeechRecognition ?? window.webkitSpeechRecognition;
+    const Ctor = getSpeechRecognitionCtor();
     if (!Ctor) {
       setSupported(false);
       return;
@@ -104,7 +89,7 @@ export function ListenRepeat({ lang }: { lang: LangCode }) {
   }
 
   function nextPhrase() {
-    setIdx((i) => (i + 1) % PHRASES.length);
+    setIdx((i) => (i + 1) % phrases.length);
     setTranscript("");
     setScore(null);
   }
@@ -113,7 +98,7 @@ export function ListenRepeat({ lang }: { lang: LangCode }) {
     <Card>
       <CardContent className="p-6 space-y-5">
         <div className="flex items-center justify-between">
-          <Badge variant="secondary">Fras {idx + 1} av {PHRASES.length}</Badge>
+          <Badge variant="secondary">Fras {(idx % phrases.length) + 1} av {phrases.length}</Badge>
           <Button variant="ghost" size="sm" onClick={nextPhrase}>
             Nästa <ChevronRight className="h-4 w-4" />
           </Button>

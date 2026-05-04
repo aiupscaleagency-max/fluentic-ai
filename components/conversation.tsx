@@ -8,6 +8,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Send, Loader2, Volume2 } from "lucide-react";
 import { addXP } from "@/lib/storage";
+import { useLevel } from "@/lib/use-level";
 
 interface Msg {
   role: "user" | "assistant";
@@ -16,6 +17,7 @@ interface Msg {
 
 export function Conversation({ lang }: { lang: LangCode }) {
   const language = getLanguage(lang)!;
+  const level = useLevel(lang);
   const [messages, setMessages] = React.useState<Msg[]>([]);
   const [input, setInput] = React.useState("");
   const [loading, setLoading] = React.useState(false);
@@ -43,7 +45,7 @@ export function Conversation({ lang }: { lang: LangCode }) {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ language: lang, messages: next }),
+        body: JSON.stringify({ language: lang, messages: next, level }),
       });
       const data = (await res.json()) as { reply?: string; error?: string };
       if (!res.ok || !data.reply) {
