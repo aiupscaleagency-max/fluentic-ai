@@ -9,14 +9,15 @@ import {
   getLessonActivity,
   getActiveLesson,
   setActiveLesson,
+  applyLevelStartingPoint,
 } from "@/lib/storage";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Dialog, DialogHeader, DialogTitle, DialogContent } from "./ui/dialog";
-import { Lock, CheckCircle2, Play, Heart, PartyPopper, Sparkles, GraduationCap } from "lucide-react";
+import { Lock, CheckCircle2, Play, Heart, PartyPopper, Sparkles, GraduationCap, FastForward } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { CEFR_DESCRIPTIONS, type CefrLevel } from "@/lib/level";
+import { CEFR_DESCRIPTIONS, type CefrLevel, getLevel } from "@/lib/level";
 
 // Visuell Duolingo-liknande lektionsväg.
 // Noder zig-zaggar, klar = grön glow, aktiv = pulserande violet, låst = grayscale.
@@ -72,9 +73,18 @@ export function LessonPath({ lang }: { lang: LangCode }) {
     <>
       <Card>
         <CardContent className="p-6">
-          <h3 className="font-semibold mb-1 flex items-center gap-2 text-base">
-            <Sparkles className="h-5 w-5 text-violet-300" /> Din lärväg
-          </h3>
+          <div className="flex items-start justify-between gap-3 mb-1 flex-wrap">
+            <h3 className="font-semibold flex items-center gap-2 text-base">
+              <Sparkles className="h-5 w-5 text-violet-300" /> Din lärväg
+            </h3>
+            <JumpToMyLevelButton
+              lang={lang}
+              lessons={lessons}
+              completed={completed}
+              activeId={activeId}
+              onApplied={refresh}
+            />
+          </div>
           <p className="text-xs text-slate-400 mb-4">
             Klara flashcards + lucka + lyssna för att markera lektionen som klar. +20 XP per lektion.
           </p>
@@ -264,5 +274,54 @@ export function LessonPath({ lang }: { lang: LangCode }) {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+// "Hoppa till min nivå"-knapp: kör om applyLevelStartingPoint för current level
+// så att lägre lektioner markeras klara och aktiv lektion sätts till första olästa
+// på användarens CEFR-nivå. Visas bara om det FAKTISKT finns lägre lektioner att skippa.
+function JumpToMyLevelButton({
+  lang,
+  lessons,
+  completed,
+  activeId,
+  onApplied,
+}: {
+  lang: LangCode;
+  lessons: Lesson[];
+  completed: string[];
+  activeId: string | null;
+  onApplied: () => void;
+}) {
+  const [level, setLvl] = React.useState<CefrLevel | null>(null);
+  React.useEffect(() => {
+    setLvl(getLevel(lang));
+    function refresh() { setLvl(getLevel(lang)); }
+    window.addEventListener("fluentic:level-changed", refresh);
+    return () => window.removeEventListener("fluentic:level-changed", refresh);
+  }, [lang]);
+
+  if (!level) return null;
+  const ORDER: CefrLevel[] = ["A1", "A2", "B1", "B2", "C1"];
+  const targetIdx = ORDER.indexOf(level);
+  // Finns det olästa lektioner UNDER current level? Då har användaren något att skippa.
+  const lowerUnfinished = lessons.some((l) => {
+    const idx = ORDER.indexOf(l.level as CefrLevel);
+    return idx >= 0 && idx < targetIdx && !completed.includes(l.id);
+  });
+  // Sitter användaren redan på rätt aktiv lektion (på sin nivå)? Då behövs ingen knapp.
+  const activeLesson = lessons.find((l) => l.id === activeId);
+  const onCorrectLevel = activeLesson && ORDER.indexOf(activeLesson.level as CefrLevel) >= targetIdx;
+  if (!lowerUnfinished && onCorrectLevel) return null;
+
+  function jump() {
+    if (!level) return;
+    applyLevelStartingPoint(lang, level, lessons);
+    onApplied();
+  }
+  return (
+    <Button size="sm" variant="outline" onClick={jump} title={`Hoppa till första lektionen på nivå ${level}`}>
+      <FastForward className="h-3.5 w-3.5" /> Hoppa till {level}
+    </Button>
   );
 }

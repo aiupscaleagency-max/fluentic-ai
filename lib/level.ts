@@ -38,6 +38,19 @@ export function setLevel(lang: LangCode, level: CefrLevel): void {
   }
 }
 
+// Sätter nivån OCH justerar lärvägens startpunkt — markerar lägre nivåer som klara
+// och sätter första olästa på vald nivå som aktiv. Använd denna i LevelPicker och
+// VoiceLevelTest så användaren hamnar på rätt plats utan att behöva klicka manuellt.
+export async function setLevelAndApplyStartingPoint(lang: LangCode, level: CefrLevel): Promise<void> {
+  setLevel(lang, level);
+  // Lazy-imports för att undvika cirkulära beroenden vid build-tid
+  const [{ getLessons }, { applyLevelStartingPoint }] = await Promise.all([
+    import("./lessons"),
+    import("./storage"),
+  ]);
+  applyLevelStartingPoint(lang, level, getLessons(lang));
+}
+
 export function levelGuidance(level: CefrLevel): string {
   // Konkret stilanvisning som vi häller in i system prompts
   switch (level) {

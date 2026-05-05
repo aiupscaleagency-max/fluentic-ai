@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CEFR_LEVELS, CEFR_DESCRIPTIONS, getLevel, setLevel, type CefrLevel } from "@/lib/level";
+import { CEFR_LEVELS, CEFR_DESCRIPTIONS, getLevel, setLevelAndApplyStartingPoint, type CefrLevel } from "@/lib/level";
 import type { LangCode } from "@/lib/languages";
 import { getLanguage } from "@/lib/languages";
 import { Dialog, DialogHeader, DialogTitle, DialogContent } from "./ui/dialog";
@@ -28,7 +28,10 @@ export function LevelPicker({
   }, [lang]);
 
   function pick(level: CefrLevel) {
-    setLevel(lang, level);
+    // Sätter nivån + justerar lärvägens startpunkt: lägre nivåer markeras som klara,
+    // första olästa på vald nivå blir aktiv. Den är async men vi väntar inte —
+    // localStorage-skriv kör synkront först.
+    void setLevelAndApplyStartingPoint(lang, level);
     setCurrent(level);
     setOpen(false);
     onChange?.(level);

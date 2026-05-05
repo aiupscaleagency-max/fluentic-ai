@@ -59,6 +59,42 @@ export const LESSONS: Lesson[] = [
     category: "work",
     goalSv: "Prata jobb, möten och vad du tycker.",
   },
+  {
+    id: "lesson-6",
+    number: 6,
+    title: "Diskussioner & abstrakta ämnen",
+    emoji: "🧠",
+    level: "B2",
+    category: "abstract",
+    goalSv: "Argumentera, jämföra och prata om idéer.",
+  },
+  {
+    id: "lesson-7",
+    number: 7,
+    title: "Nyheter & samhälle",
+    emoji: "📰",
+    level: "B2",
+    category: "abstract",
+    goalSv: "Förstå nyheter och kommentera samhällsfrågor.",
+  },
+  {
+    id: "lesson-8",
+    number: 8,
+    title: "Idiom & nyanser",
+    emoji: "🎭",
+    level: "C1",
+    category: "idioms",
+    goalSv: "Använd idiom, ironi och fångstmeningar.",
+  },
+  {
+    id: "lesson-9",
+    number: 9,
+    title: "Avancerad konversation",
+    emoji: "🗣️",
+    level: "C1",
+    category: "idioms",
+    goalSv: "Resonera fritt på språket — flytande nivå.",
+  },
 ];
 
 export function getLessons(_lang: LangCode): Lesson[] {

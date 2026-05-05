@@ -20,7 +20,7 @@ import { Button } from "./ui/button";
 import { ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { PERSONAS, setPersona, type PersonaId } from "@/lib/personas";
-import { setLevel, type CefrLevel } from "@/lib/level";
+import { setLevelAndApplyStartingPoint, type CefrLevel } from "@/lib/level";
 import { VoiceLevelTest } from "./voice-level-test";
 
 // 6 steg nu: välkommen, språk, tracks, persona, nivå-test, schema
@@ -105,9 +105,10 @@ export function OnboardingWizard() {
     selectedLangs.forEach((l) => {
       setPersona(l, personaByLang[l] ?? "sofia");
     });
-    // 4. Nivå per språk — sätts redan av VoiceLevelTest, men säkerställ A1 som fallback
+    // 4. Nivå per språk — sätts redan av VoiceLevelTest med apply-starting-point.
+    //    Säkerställ A1 som fallback för språk som hoppat över röst-testet.
     selectedLangs.forEach((l) => {
-      if (!levelByLang[l]) setLevel(l, "A1");
+      if (!levelByLang[l]) void setLevelAndApplyStartingPoint(l, "A1");
     });
     // 5. Schema-mallar (om valda och inte skip) — applicera ALLA på första språket
     if (!pickedTemplates.includes(SKIP_TEMPLATE_ID)) {

@@ -316,6 +316,46 @@ export function refillHearts(): void {
 // Lektionspath — vilka lektioner användaren har klarat
 const LESSONS_KEY_PREFIX = "fluentic.lessons.";
 
+// När användaren får sin CEFR-nivå satt (via röst-test eller manuellt) — markera alla
+// lektioner UNDER den nivån som klara så att deras lärväg startar på rätt plats.
+// Tar inte bort något redan klart. Sätter aktiv lektion till första på den nya nivån
+// om den inte redan är klar.
+// Importeras inom storage.ts för att undvika cirkulär import — vi tar Lesson via parameter.
+export function applyLevelStartingPoint(
+  lang: LangCode,
+  level: string,
+  allLessons: { id: string; level: string }[],
+): void {
+  if (typeof window === "undefined") return;
+  const ORDER = ["A1", "A2", "B1", "B2", "C1"];
+  const targetIdx = ORDER.indexOf(level);
+  if (targetIdx < 0) return;
+  // Markera alla lektioner med level < target som klara
+  const completed = new Set(getCompletedLessons(lang));
+  let changed = false;
+  for (const l of allLessons) {
+    const lvlIdx = ORDER.indexOf(l.level);
+    if (lvlIdx >= 0 && lvlIdx < targetIdx && !completed.has(l.id)) {
+      completed.add(l.id);
+      changed = true;
+    }
+  }
+  if (changed) {
+    try {
+      window.localStorage.setItem(LESSONS_KEY_PREFIX + lang, JSON.stringify([...completed]));
+      emit("fluentic:lessons-changed");
+    } catch { /* tyst */ }
+  }
+  // Sätt aktiv lektion till första olästa på vald nivå (eller högre om alla på nivån är klara)
+  const firstUnfinished = allLessons.find((l) => {
+    const lvlIdx = ORDER.indexOf(l.level);
+    return lvlIdx >= targetIdx && !completed.has(l.id);
+  });
+  if (firstUnfinished) {
+    setActiveLesson(lang, firstUnfinished.id);
+  }
+}
+
 export function getCompletedLessons(lang: LangCode): string[] {
   if (typeof window === "undefined") return [];
   try {

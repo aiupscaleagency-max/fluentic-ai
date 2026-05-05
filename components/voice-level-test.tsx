@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Button } from "./ui/button";
 import { Mic, MicOff, Loader2, Check, ArrowRight, SkipForward } from "lucide-react";
 import { getLanguage, type LangCode } from "@/lib/languages";
-import { setLevel, type CefrLevel, CEFR_LEVELS } from "@/lib/level";
+import { setLevelAndApplyStartingPoint, type CefrLevel, CEFR_LEVELS } from "@/lib/level";
 import { getSpeechRecognitionCtor, type SRInstance } from "@/lib/speech";
 import { cn } from "@/lib/cn";
 
@@ -134,13 +134,13 @@ export function VoiceLevelTest({ lang, onDone, onSkip }: Props) {
 
   function confirm() {
     if (!result) return;
-    setLevel(lang, result.level);
+    void setLevelAndApplyStartingPoint(lang, result.level);
     onDone(result.level);
   }
 
   // Manuell fallback om mic inte stöds eller användaren skippar mic
   function pickManual(level: CefrLevel) {
-    setLevel(lang, level);
+    void setLevelAndApplyStartingPoint(lang, level);
     onDone(level);
   }
 
