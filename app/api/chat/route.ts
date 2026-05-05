@@ -5,6 +5,11 @@ import { MODEL } from "@/lib/llm";
 import { CEFR_LEVELS, levelGuidance, type CefrLevel } from "@/lib/level";
 import { TRACKS, type TrackId } from "@/lib/track";
 import { getGoogleApiKey } from "@/lib/env";
+import {
+  explainGuidance,
+  isExplainLang,
+  type ExplainLang,
+} from "@/lib/explain-lang-server";
 
 export const runtime = "nodejs";
 
@@ -12,12 +17,14 @@ interface ChatBody {
   messages: { role: "user" | "assistant"; content: string }[];
   language: string;
   level?: string;
-  // Voice-läge: hoppa över svensk översättningsrad och håll det extra kort
+  // Voice-läge: hoppa över översättningsrad och håll det extra kort
   voice?: boolean;
   // Roll-spel: överstyr default-systemprompt helt (vi lägger fortfarande på regler)
   systemOverride?: string;
   // Track styr vokabulär-fokus (general/business/travel/academic/casual)
   track?: string;
+  // Förklaringsspråk: vilket språk AI:n ska skriva förklaringar/översättningar PÅ
+  explainLang?: ExplainLang;
 }
 
 // Säker fallback om klienten skickar nåt vi inte känner igen
@@ -57,40 +64,55 @@ export async function POST(req: Request) {
 
   const trackLine = trackFocusLine(body.track);
 
+  // Default sv om klienten missar att skicka explainLang (bakåtkompat)
+  const explainLang: ExplainLang = isExplainLang(body.explainLang)
+    ? body.explainLang
+    : "sv";
+  const ex = explainGuidance(explainLang);
+
   let system: string;
   if (body.systemOverride && body.systemOverride.trim()) {
-    // Roll-spel: persona + obligatoriska regler nedan
+    // Roll-spel: persona + obligatoriska regler nedan. Persona kan kräva "JSON only" osv,
+    // så vi instruerar bara metaspråket — inte att lägga till översättningsrad.
     system = `${body.systemOverride.trim()}
 
 Adapt vocabulary, grammar, and sentence length to CEFR ${level}. ${levelGuidance(level)}
 ${trackLine}
-Reply ONLY in ${lang.native}. Do not switch to Swedish or English.
+Reply ONLY in ${lang.native}. Do not switch to ${ex.englishName} or any other language.
+If you need to write meta-commentary, feedback or coaching to the user, use ${ex.englishName}.
 Keep replies to 1-3 short sentences.`;
   } else if (body.voice) {
-    // Voice-läge: kort och naturligt, ingen extra svensk översättning
-    system = `You are a friendly conversation partner helping a Swedish user practice ${lang.native}.
+    // Voice-läge: kort och naturligt, ingen extra översättning
+    system = `You are a friendly conversation partner helping a user practice ${lang.native}.
+The user's preferred explanation language is ${ex.englishName} — use it if you need to clarify something briefly.
 Adapt to CEFR ${level}. ${levelGuidance(level)}
 ${trackLine}
-Reply ONLY in ${lang.native} — no Swedish translation, no markdown, no emoji.
+Reply ONLY in ${lang.native} — no ${ex.englishName} translation, no markdown, no emoji.
 Keep replies to 1-2 sentences. Ask a follow-up question to keep the conversation going.`;
   } else {
-    // Standard chat-läge med svensk översättning under
-    system = `Du är en vänlig och uppmuntrande språklärare för en svensk användare som lär sig ${lang.name.toLowerCase()} (${lang.native}).
+    // Standard chat-läge med översättning under på användarens valda förklaringsspråk
+    const exampleTranslations: Record<ExplainLang, string> = {
+      sv: "*Hej, hur mår du idag?*",
+      es: "*¡Hola! ¿Cómo estás hoy?*",
+      en: "*Hi, how are you today?*",
+    };
+    system = `You are a friendly and encouraging language teacher for a user learning ${lang.native} (${lang.name}).
+The user's preferred explanation language is ${ex.englishName}. ALL meta-commentary, translations and corrections must be in ${ex.englishName} — never in any other meta-language.
 
-Anpassa ordförråd, grammatik och meningslängd till CEFR ${level}. ${levelGuidance(level)}
+Adapt vocabulary, grammar, and sentence length to CEFR ${level}. ${levelGuidance(level)}
 ${trackLine}
 
-Regler:
-- Svara ALLTID på ${lang.native} på rätt nivå.
-- Direkt efter ditt svar, lägg till en svensk översättning på en NY rad i kursiv stil med markdown-asterisker, t.ex. *Hej! Hur mår du idag?*
-- Om användaren skriver på svenska eller gör ett misstag, rätta vänligt på ${lang.native} och förklara kort på svenska i den kursiva raden.
-- Håll svaren korta (max 3 meningar) — du är en samtalspartner, inte en föreläsare.
-- Ställ följdfrågor för att hålla samtalet igång.
-- Använd bara latinska/arabiska tecken för respektive språk, inga emojis.
+Rules:
+- ALWAYS reply in ${lang.native} at the right level.
+- Directly after your reply, add a translation in ${ex.englishName} on a NEW line in italic markdown (asterisks). Example label: "${ex.italicLabel}".
+- If the user writes in ${ex.englishName} or makes a mistake, ${ex.correctVerb} and explain briefly in ${ex.englishName} on the italic line.
+- Keep replies short (max 3 sentences) — you are a conversation partner, not a lecturer.
+- Ask a follow-up question to keep the conversation going.
+- Use only the proper script for ${lang.native} (no emoji).
 
-Format-exempel:
+Format example:
 Hola, ¿cómo estás hoy?
-*Hej, hur mår du idag?*`;
+${exampleTranslations[explainLang]}`;
   }
 
   const maxOutputTokens = body.voice || body.systemOverride ? 250 : 400;

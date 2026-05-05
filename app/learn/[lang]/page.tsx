@@ -17,6 +17,7 @@ import { ProgressBar } from "@/components/progress-bar";
 import { LessonPath } from "@/components/lesson-path";
 import { LevelPicker } from "@/components/level-picker";
 import { TrackPicker } from "@/components/track-picker";
+import { ExplainLangPicker } from "@/components/explain-lang-picker";
 import { ScrambleGame } from "@/components/games/scramble";
 import { ListenPickGame } from "@/components/games/listen-pick";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,7 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
         <div className="flex items-center gap-2 flex-wrap">
           <LevelPicker lang={lang} />
           <TrackPicker lang={lang} />
+          <ExplainLangPicker lang={lang} />
           <Link href={`/learn/${lang}/call`}>
             <Button size="sm">
               <Mic className="h-4 w-4" /> Tala med tutor

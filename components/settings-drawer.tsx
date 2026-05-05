@@ -3,8 +3,15 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, RefreshCw, Bell, Volume2, Settings as SettingsIcon } from "lucide-react";
-import { resetOnboarding } from "@/lib/storage";
+import { X, RefreshCw, Bell, Volume2, Settings as SettingsIcon, Languages } from "lucide-react";
+import { resetOnboarding, getSelectedLanguages } from "@/lib/storage";
+import { LANGUAGES, type LangCode } from "@/lib/languages";
+import {
+  EXPLAIN_LANGS,
+  getExplainLang,
+  setExplainLang,
+  type ExplainLang,
+} from "@/lib/explain-lang";
 import { Button } from "./ui/button";
 
 // Höger-sheet med snabbinställningar (re-onboard, notiser, voice-speed).
@@ -18,6 +25,9 @@ export function SettingsDrawer({
   const router = useRouter();
   const [permission, setPermission] = React.useState<NotificationPermission | "unsupported">("default");
   const [voiceSpeed, setVoiceSpeed] = React.useState<number>(1.0);
+  // Förklaringsspråk per inlärningsspråk — speglas mot localStorage
+  const [explainByLang, setExplainByLang] = React.useState<Record<string, ExplainLang>>({});
+  const [activeLangs, setActiveLangs] = React.useState<LangCode[]>([]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;
@@ -30,7 +40,19 @@ export function SettingsDrawer({
       const v = parseFloat(window.localStorage.getItem("fluentic.voice-rate") ?? "1.0");
       if (Number.isFinite(v) && v > 0) setVoiceSpeed(v);
     } catch {/* tyst */}
+
+    // Ladda valda språk + nuvarande förklaringsspråk per språk
+    const langs = getSelectedLanguages();
+    setActiveLangs(langs);
+    const map: Record<string, ExplainLang> = {};
+    langs.forEach((l) => { map[l] = getExplainLang(l); });
+    setExplainByLang(map);
   }, [open]);
+
+  function pickExplain(lang: LangCode, code: ExplainLang) {
+    setExplainLang(lang, code);
+    setExplainByLang((m) => ({ ...m, [lang]: code }));
+  }
 
   function saveSpeed(v: number) {
     setVoiceSpeed(v);
@@ -122,6 +144,44 @@ export function SettingsDrawer({
                     </button>
                   ))}
                 </div>
+              </Section>
+
+              <Section
+                title="Förklaringsspråk"
+                desc="Vilket språk AI:n förklarar PÅ för varje inlärningsspråk. T.ex. lär dig arabiska med spanska förklaringar för att träna båda samtidigt."
+              >
+                {activeLangs.length === 0 ? (
+                  <div className="text-xs text-slate-500 inline-flex items-center gap-1">
+                    <Languages className="h-3.5 w-3.5" /> Inga språk valda än.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {activeLangs.map((code) => {
+                      const meta = LANGUAGES.find((l) => l.code === code)!;
+                      const value = explainByLang[code] ?? "sv";
+                      return (
+                        <div key={code} className="flex items-center justify-between gap-2">
+                          <div className="text-sm inline-flex items-center gap-2 min-w-0">
+                            <span className="text-base">{meta.flag}</span>
+                            <span className="truncate">{meta.name}</span>
+                          </div>
+                          <select
+                            value={value}
+                            onChange={(e) => pickExplain(code, e.target.value as ExplainLang)}
+                            className="text-xs rounded-md border border-white/15 bg-slate-900 px-2 py-1"
+                            aria-label={`Förklaringsspråk för ${meta.name}`}
+                          >
+                            {EXPLAIN_LANGS.map((el) => (
+                              <option key={el.code} value={el.code}>
+                                {el.flag} {el.native}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </Section>
 
               <Section title="Språk i UI" desc="Bara svenska just nu — fler kommer.">

@@ -4,6 +4,11 @@ import { MODEL } from "@/lib/llm";
 import { CEFR_LEVELS, levelGuidance, type CefrLevel } from "@/lib/level";
 import { TRACKS, type TrackId } from "@/lib/track";
 import { getGoogleApiKey } from "@/lib/env";
+import {
+  explainGuidance,
+  isExplainLang,
+  type ExplainLang,
+} from "@/lib/explain-lang-server";
 
 export const runtime = "nodejs";
 
@@ -13,6 +18,8 @@ interface TranslateBody {
   to: string;
   level?: string;
   track?: string;
+  // Vilket språk eventuella nivå-/förklaringsnoter ska skrivas på
+  explainLang?: ExplainLang;
 }
 
 function trackFocusLine(track?: string): string {
@@ -71,9 +78,16 @@ export async function POST(req: Request) {
 
   const trackLine = trackFocusLine(body.track);
 
+  // Default sv om klienten inte skickar — bakåtkompat
+  const explainLang: ExplainLang = isExplainLang(body.explainLang)
+    ? body.explainLang
+    : "sv";
+  const ex = explainGuidance(explainLang);
+
   // Vi använder Geminis native JSON-läge (responseMimeType) för pålitlig output.
   const system = `You are a precise translator. ${levelLine}
 ${trackLine}
+Any meta-comment, level note or explanation in the output must be written in ${ex.englishName}.
 Output a JSON object with this schema:
 {
   "translation": string,         // The translation in ${toName}

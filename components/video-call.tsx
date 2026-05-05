@@ -7,6 +7,7 @@ import { getLanguage } from "@/lib/languages";
 import { Mic, MicOff, PhoneOff, Volume2, VolumeX, Loader2 } from "lucide-react";
 import { useLevel } from "@/lib/use-level";
 import { useTrack } from "@/lib/track";
+import { useExplainLang } from "@/lib/explain-lang";
 import { addXP } from "@/lib/storage";
 import { getSpeechRecognitionCtor, type SRInstance } from "@/lib/speech";
 import { cn } from "@/lib/cn";
@@ -48,6 +49,7 @@ export function VideoCall({
   const language = getLanguage(lang)!;
   const level = useLevel(lang);
   const track = useTrack(lang);
+  const explainLang = useExplainLang(lang);
   const [state, setState] = React.useState<State>("idle");
   const [history, setHistory] = React.useState<Msg[]>([]);
   const [supported, setSupported] = React.useState(true);
@@ -193,6 +195,7 @@ export function VideoCall({
           track,
           voice: true,
           systemOverride,
+          explainLang,
         }),
       });
       const data = (await res.json()) as { reply?: string; error?: string };

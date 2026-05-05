@@ -9,6 +9,12 @@ import {
   markOnboarded,
   setSelectedLanguages,
 } from "@/lib/storage";
+import {
+  EXPLAIN_LANGS,
+  getExplainLang,
+  setExplainLang,
+  type ExplainLang,
+} from "@/lib/explain-lang";
 import { SCHEDULE_TEMPLATES, applyTemplate } from "@/lib/schedule-templates";
 import { Button } from "./ui/button";
 import { ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react";
@@ -311,6 +317,16 @@ function Step3({
   total: number;
 }) {
   const language = LANGUAGES.find((l) => l.code === lang)!;
+  // Förklaringsspråk per inlärningsspråk — speglas mot localStorage så switch fungerar direkt
+  const [explain, setExplain] = React.useState<ExplainLang>("sv");
+  React.useEffect(() => {
+    setExplain(getExplainLang(lang));
+  }, [lang]);
+  function pickExplain(code: ExplainLang) {
+    setExplain(code);
+    setExplainLang(lang, code);
+  }
+
   return (
     <div className="space-y-6 px-4">
       <div className="text-center space-y-2">
@@ -353,6 +369,36 @@ function Step3({
             </motion.button>
           );
         })}
+      </div>
+
+      {/* Förklaringsspråk per språk — Mike vill kunna träna t.ex. arabiska MED spanska förklaringar */}
+      <div className="rounded-2xl glass border-white/10 p-4 space-y-3">
+        <div className="text-sm">
+          På vilket språk vill du få förklaringar för{" "}
+          <span className="font-semibold">{language.name}</span>?
+        </div>
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Förklaringsspråk">
+          {EXPLAIN_LANGS.map((el) => {
+            const active = explain === el.code;
+            return (
+              <button
+                key={el.code}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => pickExplain(el.code)}
+                className={cn(
+                  "rounded-full px-3 py-1.5 text-sm border transition-colors",
+                  active
+                    ? "border-violet-400 bg-violet-500/20 text-violet-100"
+                    : "border-white/15 bg-white/5 hover:bg-white/10 text-slate-200",
+                )}
+              >
+                {el.flag} {el.native}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="flex items-center justify-between pt-2">

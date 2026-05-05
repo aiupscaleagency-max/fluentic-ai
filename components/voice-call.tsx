@@ -9,6 +9,7 @@ import { Badge } from "./ui/badge";
 import { Mic, MicOff, PhoneOff, Settings, Loader2 } from "lucide-react";
 import { useLevel } from "@/lib/use-level";
 import { useTrack } from "@/lib/track";
+import { useExplainLang } from "@/lib/explain-lang";
 import { addXP } from "@/lib/storage";
 
 import { getSpeechRecognitionCtor, type SRInstance } from "@/lib/speech";
@@ -28,6 +29,7 @@ export function VoiceCall({ lang, systemOverride, greeting, onEnd, endLabel = "A
   const language = getLanguage(lang)!;
   const level = useLevel(lang);
   const track = useTrack(lang);
+  const explainLang = useExplainLang(lang);
   const [state, setState] = React.useState<State>("idle");
   const [history, setHistory] = React.useState<Msg[]>([]);
   const [supported, setSupported] = React.useState(true);
@@ -140,6 +142,7 @@ export function VoiceCall({ lang, systemOverride, greeting, onEnd, endLabel = "A
           track,
           voice: true,
           systemOverride,
+          explainLang,
         }),
       });
       const data = (await res.json()) as { reply?: string; error?: string };

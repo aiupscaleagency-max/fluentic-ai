@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Award } from "lucide-react";
 import { LevelPicker } from "@/components/level-picker";
 import { useLevel } from "@/lib/use-level";
+import { useExplainLang, explainLangName } from "@/lib/explain-lang";
 import { addXP } from "@/lib/storage";
 import * as React from "react";
 
@@ -42,6 +43,7 @@ export default function ScenarioPage({ params }: { params: Promise<{ lang: strin
   if (!scenario) notFound();
   const language = getLanguage(lang)!;
   const level = useLevel(lang);
+  const explainLang = useExplainLang(lang as import("@/lib/languages").LangCode);
   const [summary, setSummary] = React.useState<Summary | null>(null);
   const [summaryLoading, setSummaryLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -58,21 +60,24 @@ export default function ScenarioPage({ params }: { params: Promise<{ lang: strin
     setSummaryLoading(true);
     addXP(15);
     try {
+      // Coach-prompt: båda strängar + JSON-fält ska vara på användarens valda förklaringsspråk
+      const explainName = explainLangName(explainLang); // "svenska" | "español" | "English"
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           language: lang,
-          systemOverride: `You are a Swedish-speaking language coach. Read the role-play transcript between the user (learning ${language.native}) and an in-character partner. Output a single JSON object — no prose, no fences. Schema:
+          systemOverride: `You are a language coach who replies ONLY in ${explainName}. Read the role-play transcript between the user (learning ${language.native}) and an in-character partner. Output a single JSON object — no prose, no fences. All strings inside must be written in ${explainName}. Schema:
 {
   "strengths": string[],
   "improvements": string[]
 }`,
           level,
+          explainLang,
           messages: [
             {
               role: "user",
-              content: `Transkript:\n${history.map((m) => `${m.role === "user" ? "Användaren" : "Tutor"}: ${m.content}`).join("\n")}`,
+              content: `Transcript:\n${history.map((m) => `${m.role === "user" ? "User" : "Tutor"}: ${m.content}`).join("\n")}`,
             },
           ],
         }),

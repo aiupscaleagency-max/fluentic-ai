@@ -9,6 +9,7 @@ import { Mic, MicOff, Volume2, ArrowLeftRight, Loader2, MessagesSquare } from "l
 import { getLevel } from "@/lib/level";
 import { isValidLangCode } from "@/lib/languages";
 import { getTrack } from "@/lib/track";
+import { getExplainLang } from "@/lib/explain-lang";
 
 // Tolken stödjer även "sv" som käll- och målspråk utöver MVP-fyran
 type TranslatorLang = "sv" | "es" | "en" | "fr" | "ar";
@@ -91,13 +92,14 @@ export function Translator() {
     setError(null);
     setOut(null);
     try {
-      // Anpassa nivå + track efter målspråket om vi översätter TILL ett av Fluentics språk
+      // Anpassa nivå + track + förklaringsspråk efter målspråket om vi översätter TILL ett av Fluentics språk
       const level = isValidLangCode(tg) ? getLevel(tg) : null;
       const track = isValidLangCode(tg) ? getTrack(tg) : null;
+      const explainLang = isValidLangCode(tg) ? getExplainLang(tg) : undefined;
       const res = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: t, from: f, to: tg, level, track }),
+        body: JSON.stringify({ text: t, from: f, to: tg, level, track, explainLang }),
       });
       const data = (await res.json()) as TranslateResp;
       if (!res.ok || !data.translation) {

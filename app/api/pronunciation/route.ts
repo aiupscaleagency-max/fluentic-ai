@@ -6,6 +6,11 @@ import { CEFR_LEVELS, type CefrLevel } from "@/lib/level";
 import { TRACKS, type TrackId } from "@/lib/track";
 import { similarityScore } from "@/lib/similarity";
 import { getGoogleApiKey } from "@/lib/env";
+import {
+  explainGuidance,
+  isExplainLang,
+  type ExplainLang,
+} from "@/lib/explain-lang-server";
 
 export const runtime = "nodejs";
 
@@ -15,6 +20,8 @@ interface PronBody {
   language: string;
   level?: string;
   track?: string;
+  // Vilket språk tips & commonMistakes ska skrivas på
+  explainLang?: ExplainLang;
 }
 
 function trackFocusLine(track?: string): string {
@@ -55,20 +62,26 @@ export async function POST(req: Request) {
 
   const trackLine = trackFocusLine(body.track);
 
-  const system = `You are a strict but encouraging pronunciation coach for a Swedish speaker learning ${lang.native} at CEFR ${level}.
+  // Default sv om klienten inte skickar
+  const explainLang: ExplainLang = isExplainLang(body.explainLang)
+    ? body.explainLang
+    : "sv";
+  const ex = explainGuidance(explainLang);
+
+  const system = `You are a strict but encouraging pronunciation coach for a user learning ${lang.native} at CEFR ${level}.
 ${trackLine}
-You ONLY ever reply in Swedish. Output a JSON object with this schema:
+You ONLY ever reply in ${ex.englishName}. Output a JSON object with this schema:
 {
   "score": number,            // 0-100 — how close the recognized text is to the target, accounting for typical TTS-recognizer noise
-  "tips": string[],           // 1-4 concrete pronunciation tips in Swedish (focus on sounds, stress, intonation)
-  "commonMistakes": string    // 1-2 sentences in Swedish about what likely went wrong
+  "tips": string[],           // 1-4 concrete pronunciation tips in ${ex.englishName} (focus on sounds, stress, intonation)
+  "commonMistakes": string    // 1-2 sentences in ${ex.englishName} about what likely went wrong
 }`;
 
   const userPrompt = `Target phrase (${lang.native}): ${body.target}
 What the recognizer heard: ${body.recognized}
-Levenshtein-similarity baseline (för referens): ${baseScore}/100
+Levenshtein similarity baseline (reference): ${baseScore}/100
 
-Bedöm uttalet och ge tipsen på svenska. Var konkret om vilka ljud eller stavelser som behöver tränas.`;
+Assess the pronunciation and give the tips in ${ex.englishName}. Be concrete about which sounds or syllables need practice.`;
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
