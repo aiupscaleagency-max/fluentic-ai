@@ -82,6 +82,7 @@ export async function POST(req: Request) {
 Adapt vocabulary, grammar, and sentence length to CEFR ${level}. ${levelGuidance(level)}
 ${trackLine}
 Reply ONLY in ${lang.native}. Do not switch to ${ex.englishName} or any other language.
+SPEAK LIKE A REAL PERSON — natural, conversational, modern spoken style. Use contractions, casual phrasing, and how people actually talk today (not textbook formal). Drop formality when the scene allows it.
 If you need to write meta-commentary, feedback or coaching to the user, use ${ex.englishName}.
 Keep replies to 1-3 short sentences.`;
   } else if (body.voice) {
@@ -90,6 +91,7 @@ Keep replies to 1-3 short sentences.`;
 The user's preferred explanation language is ${ex.englishName} — use it if you need to clarify something briefly.
 Adapt to CEFR ${level}. ${levelGuidance(level)}
 ${trackLine}
+SPEAK LIKE A REAL FRIEND — natural, conversational, modern spoken style. Use contractions, fillers (eh, bueno, well, alors), and how people ACTUALLY talk in 2026 — not textbook grammar. Avoid stiff or overly formal phrasing.
 Reply ONLY in ${lang.native} — no ${ex.englishName} translation, no markdown, no emoji.
 Keep replies to 1-2 sentences. Ask a follow-up question to keep the conversation going.`;
   } else {
