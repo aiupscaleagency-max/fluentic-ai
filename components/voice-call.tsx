@@ -8,6 +8,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Mic, MicOff, PhoneOff, Settings, Loader2 } from "lucide-react";
 import { useLevel } from "@/lib/use-level";
+import { useTrack } from "@/lib/track";
 import { addXP } from "@/lib/storage";
 
 import { getSpeechRecognitionCtor, type SRInstance } from "@/lib/speech";
@@ -26,6 +27,7 @@ interface Props {
 export function VoiceCall({ lang, systemOverride, greeting, onEnd, endLabel = "Avsluta samtal" }: Props) {
   const language = getLanguage(lang)!;
   const level = useLevel(lang);
+  const track = useTrack(lang);
   const [state, setState] = React.useState<State>("idle");
   const [history, setHistory] = React.useState<Msg[]>([]);
   const [supported, setSupported] = React.useState(true);
@@ -135,6 +137,7 @@ export function VoiceCall({ lang, systemOverride, greeting, onEnd, endLabel = "A
           language: lang,
           messages: next,
           level,
+          track,
           voice: true,
           systemOverride,
         }),

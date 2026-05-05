@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getLanguage, isValidLangCode } from "@/lib/languages";
 import { MODEL } from "@/lib/llm";
 import { CEFR_LEVELS, levelGuidance, type CefrLevel } from "@/lib/level";
+import { TRACKS, type TrackId } from "@/lib/track";
 import { getGoogleApiKey } from "@/lib/env";
 
 export const runtime = "nodejs";
@@ -15,6 +16,15 @@ interface ChatBody {
   voice?: boolean;
   // Roll-spel: överstyr default-systemprompt helt (vi lägger fortfarande på regler)
   systemOverride?: string;
+  // Track styr vokabulär-fokus (general/business/travel/academic/casual)
+  track?: string;
+}
+
+// Säker fallback om klienten skickar nåt vi inte känner igen
+function trackFocusLine(track?: string): string {
+  const t = TRACKS.find((tt) => tt.id === (track as TrackId));
+  if (!t || t.id === "general") return "";
+  return `Focus vocabulary and examples on ${t.focus} contexts.`;
 }
 
 export async function POST(req: Request) {
@@ -45,18 +55,22 @@ export async function POST(req: Request) {
     ? (body.level as CefrLevel)
     : "A2";
 
+  const trackLine = trackFocusLine(body.track);
+
   let system: string;
   if (body.systemOverride && body.systemOverride.trim()) {
     // Roll-spel: persona + obligatoriska regler nedan
     system = `${body.systemOverride.trim()}
 
 Adapt vocabulary, grammar, and sentence length to CEFR ${level}. ${levelGuidance(level)}
+${trackLine}
 Reply ONLY in ${lang.native}. Do not switch to Swedish or English.
 Keep replies to 1-3 short sentences.`;
   } else if (body.voice) {
     // Voice-läge: kort och naturligt, ingen extra svensk översättning
     system = `You are a friendly conversation partner helping a Swedish user practice ${lang.native}.
 Adapt to CEFR ${level}. ${levelGuidance(level)}
+${trackLine}
 Reply ONLY in ${lang.native} — no Swedish translation, no markdown, no emoji.
 Keep replies to 1-2 sentences. Ask a follow-up question to keep the conversation going.`;
   } else {
@@ -64,6 +78,7 @@ Keep replies to 1-2 sentences. Ask a follow-up question to keep the conversation
     system = `Du är en vänlig och uppmuntrande språklärare för en svensk användare som lär sig ${lang.name.toLowerCase()} (${lang.native}).
 
 Anpassa ordförråd, grammatik och meningslängd till CEFR ${level}. ${levelGuidance(level)}
+${trackLine}
 
 Regler:
 - Svara ALLTID på ${lang.native} på rätt nivå.

@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { MODEL } from "@/lib/llm";
 import { CEFR_LEVELS, levelGuidance, type CefrLevel } from "@/lib/level";
+import { TRACKS, type TrackId } from "@/lib/track";
 import { getGoogleApiKey } from "@/lib/env";
 
 export const runtime = "nodejs";
@@ -11,6 +12,13 @@ interface TranslateBody {
   from: string;
   to: string;
   level?: string;
+  track?: string;
+}
+
+function trackFocusLine(track?: string): string {
+  const t = TRACKS.find((tt) => tt.id === (track as TrackId));
+  if (!t || t.id === "general") return "";
+  return `Focus vocabulary and examples on ${t.focus} contexts.`;
 }
 
 // Vi tillåter "sv" + de fyra MVP-språken som källa/mål för tolken
@@ -61,8 +69,11 @@ export async function POST(req: Request) {
     ? `Adapt vocabulary, grammar, sentence length to CEFR ${level}. ${levelGuidance(level)}`
     : "";
 
+  const trackLine = trackFocusLine(body.track);
+
   // Vi använder Geminis native JSON-läge (responseMimeType) för pålitlig output.
   const system = `You are a precise translator. ${levelLine}
+${trackLine}
 Output a JSON object with this schema:
 {
   "translation": string,         // The translation in ${toName}

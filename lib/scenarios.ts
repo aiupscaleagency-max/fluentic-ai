@@ -1,6 +1,7 @@
 // Roll-spel-scenarier — 10 st, samma över alla språk
 import type { LangCode } from "./languages";
 import { getLanguage } from "./languages";
+import type { TrackId } from "./track";
 
 export interface Scenario {
   id: string;
@@ -17,6 +18,8 @@ export interface Scenario {
   goalSv: string;
   // Lärandemål på svenska — visas som checklist innan/efter
   learningGoalsSv: string[];
+  // Vilka tracks scenariot främst hör hemma i — används för att sortera scenarier-tab
+  tracks: TrackId[];
 }
 
 function langName(lang: LangCode): string {
@@ -117,6 +120,7 @@ export const SCENARIOS: Scenario[] = [
     personaForLang: (lang) =>
       `You are a friendly barista at a small café in a ${langName(lang)}-speaking city. Greet the user, ask what they want, suggest pastries, take their order, and tell them the price. Stay in character. Speak ONLY ${langName(lang)}. Keep replies short (1-2 sentences) so the user gets to talk.`,
     openingForLang: (lang) => pick(OPEN_CAFE, lang),
+    tracks: ["casual", "travel"],
   },
   {
     id: "airport",
@@ -133,6 +137,7 @@ export const SCENARIOS: Scenario[] = [
     personaForLang: (lang) =>
       `You are a check-in agent at an international airport speaking ${langName(lang)}. Ask for passport and ticket, ask about luggage, give boarding info and gate. Stay in character. Speak ONLY ${langName(lang)}. Keep replies short.`,
     openingForLang: (lang) => pick(OPEN_AIRPORT, lang),
+    tracks: ["travel"],
   },
   {
     id: "party",
@@ -149,6 +154,7 @@ export const SCENARIOS: Scenario[] = [
     personaForLang: (lang) =>
       `You are a friendly stranger at a casual party. Introduce yourself in ${langName(lang)}, ask the user where they're from, what they do, and chat naturally. Stay in character. Speak ONLY ${langName(lang)}. Keep replies short and warm.`,
     openingForLang: (lang) => pick(OPEN_PARTY, lang),
+    tracks: ["casual"],
   },
   {
     id: "apartment",
@@ -165,6 +171,7 @@ export const SCENARIOS: Scenario[] = [
     personaForLang: (lang) =>
       `You are a landlord showing an apartment, speaking ${langName(lang)}. Greet the user, describe the apartment, answer questions about rent, deposit, and viewings. Stay in character. Speak ONLY ${langName(lang)}.`,
     openingForLang: (lang) => pick(OPEN_APARTMENT, lang),
+    tracks: ["general", "travel"],
   },
   {
     id: "doctor",
@@ -181,6 +188,7 @@ export const SCENARIOS: Scenario[] = [
     personaForLang: (lang) =>
       `You are a calm general practitioner doctor speaking ${langName(lang)}. Greet the patient, ask what's wrong, ask follow-up questions about symptoms, and suggest next steps. Stay in character. Speak ONLY ${langName(lang)}. Keep replies short.`,
     openingForLang: (lang) => pick(OPEN_DOCTOR, lang),
+    tracks: ["general", "travel"],
   },
   {
     id: "interview",
@@ -197,6 +205,7 @@ export const SCENARIOS: Scenario[] = [
     personaForLang: (lang) =>
       `You are a hiring manager conducting a job interview in ${langName(lang)}. Greet the candidate, ask about background, strengths, motivation and one challenging question. Stay in character. Speak ONLY ${langName(lang)}. Keep questions focused.`,
     openingForLang: (lang) => pick(OPEN_INTERVIEW, lang),
+    tracks: ["business"],
   },
   {
     id: "restaurant",
@@ -213,6 +222,7 @@ export const SCENARIOS: Scenario[] = [
     personaForLang: (lang) =>
       `You are a polite waiter at a popular restaurant, speaking ${langName(lang)}. Welcome the user, take their order step by step (drinks, starter, main), answer questions about allergens (gluten, lactose, nuts), and bring the bill when asked. Stay in character. Speak ONLY ${langName(lang)}. Keep replies to 1-2 short sentences so the user gets to practice.`,
     openingForLang: (lang) => pick(OPEN_RESTAURANT, lang),
+    tracks: ["travel", "casual"],
   },
   {
     id: "pharmacy",
@@ -229,6 +239,7 @@ export const SCENARIOS: Scenario[] = [
     personaForLang: (lang) =>
       `You are a helpful pharmacist behind the counter, speaking ${langName(lang)}. Ask the user what symptoms they have, suggest a suitable over-the-counter medicine, explain the dosage briefly, and ask if they have allergies. Stay in character. Speak ONLY ${langName(lang)}. Keep replies short.`,
     openingForLang: (lang) => pick(OPEN_PHARMACY, lang),
+    tracks: ["travel", "general"],
   },
   {
     id: "hotel",
@@ -245,6 +256,7 @@ export const SCENARIOS: Scenario[] = [
     personaForLang: (lang) =>
       `You are a hotel receptionist checking in a guest, speaking ${langName(lang)}. Confirm the reservation, ask for ID, give them their room number, explain wifi and breakfast, and politely handle a request for a different room. Stay in character. Speak ONLY ${langName(lang)}. Keep replies short and helpful.`,
     openingForLang: (lang) => pick(OPEN_HOTEL, lang),
+    tracks: ["travel", "business"],
   },
   {
     id: "coworker",
@@ -261,6 +273,7 @@ export const SCENARIOS: Scenario[] = [
     personaForLang: (lang) =>
       `You are a friendly coworker chatting by the office coffee machine, speaking ${langName(lang)}. Make small talk about the weather, ask about the user's weekend, and mention an upcoming project at work. Stay in character. Speak ONLY ${langName(lang)}. Keep replies short and casual.`,
     openingForLang: (lang) => pick(OPEN_COWORKER, lang),
+    tracks: ["business", "casual"],
   },
 ];
 

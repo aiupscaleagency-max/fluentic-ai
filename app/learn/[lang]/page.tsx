@@ -15,10 +15,13 @@ import { ScenariosTab } from "@/components/scenarios-tab";
 import { ProgressBar } from "@/components/progress-bar";
 import { LessonPath } from "@/components/lesson-path";
 import { LevelPicker } from "@/components/level-picker";
+import { TrackPicker } from "@/components/track-picker";
+import { ScrambleGame } from "@/components/games/scramble";
+import { ListenPickGame } from "@/components/games/listen-pick";
 import { Button } from "@/components/ui/button";
 import { OnboardingDialog } from "@/components/onboarding";
 import Link from "next/link";
-import { Mic } from "lucide-react";
+import { Mic, Dices } from "lucide-react";
 import { getActiveLesson } from "@/lib/storage";
 import type { LangCode } from "@/lib/languages";
 
@@ -57,6 +60,7 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <LevelPicker lang={lang} />
+          <TrackPicker lang={lang} />
           <Link href={`/learn/${lang}/call`}>
             <Button size="sm">
               <Mic className="h-4 w-4" /> Tala med tutor
@@ -79,6 +83,12 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
 
       <ProgressBar />
 
+      <Link href={`/learn/${lang}/mix`} className="block">
+        <Button size="lg" className="w-full bg-gradient-to-r from-fuchsia-500 to-indigo-600 hover:opacity-90 text-white">
+          <Dices className="h-5 w-5" /> 🎲 Snabblektion (8 turer)
+        </Button>
+      </Link>
+
       <LessonPath lang={lang} />
 
       <Tabs defaultValue="flashcards">
@@ -90,6 +100,8 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
           <TabsTrigger value="scenarios">Scenarier</TabsTrigger>
           <TabsTrigger value="match">Match</TabsTrigger>
           <TabsTrigger value="cloze">Lucka</TabsTrigger>
+          <TabsTrigger value="scramble">Ordpussel</TabsTrigger>
+          <TabsTrigger value="listenpick">Lyssna & välj</TabsTrigger>
         </TabsList>
         <TabsContent value="flashcards">
           <Flashcards lang={lang} lessonId={activeLesson ?? undefined} />
@@ -111,6 +123,12 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
         </TabsContent>
         <TabsContent value="cloze">
           <ClozeGame lang={lang} lessonId={activeLesson ?? undefined} />
+        </TabsContent>
+        <TabsContent value="scramble">
+          <ScrambleGame lang={lang} />
+        </TabsContent>
+        <TabsContent value="listenpick">
+          <ListenPickGame lang={lang} />
         </TabsContent>
       </Tabs>
     </div>

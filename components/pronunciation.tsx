@@ -11,6 +11,7 @@ import { Mic, MicOff, Volume2, ChevronRight, Sparkles, Loader2 } from "lucide-re
 import { similarityScore } from "@/lib/similarity";
 import { addXP } from "@/lib/storage";
 import { useLevel } from "@/lib/use-level";
+import { useTrack } from "@/lib/track";
 
 import { getSpeechRecognitionCtor, type SRInstance } from "@/lib/speech";
 
@@ -34,6 +35,7 @@ function diffTokens(target: string, recognized: string): { token: string; match:
 export function Pronunciation({ lang }: { lang: LangCode }) {
   const language = getLanguage(lang)!;
   const level = useLevel(lang);
+  const track = useTrack(lang);
   const phrases = React.useMemo<Phrase[]>(() => {
     const list = getPhrases(level);
     return list.length >= 4 ? list : getPhrases(); // fallback om mappad nivå har för få
@@ -116,7 +118,7 @@ export function Pronunciation({ lang }: { lang: LangCode }) {
       const res = await fetch("/api/pronunciation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ target, recognized: transcript, language: lang, level }),
+        body: JSON.stringify({ target, recognized: transcript, language: lang, level, track }),
       });
       const data = (await res.json()) as AiFeedback & { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Fel");

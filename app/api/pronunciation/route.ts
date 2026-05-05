@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getLanguage, isValidLangCode } from "@/lib/languages";
 import { MODEL } from "@/lib/llm";
 import { CEFR_LEVELS, type CefrLevel } from "@/lib/level";
+import { TRACKS, type TrackId } from "@/lib/track";
 import { similarityScore } from "@/lib/similarity";
 import { getGoogleApiKey } from "@/lib/env";
 
@@ -13,6 +14,13 @@ interface PronBody {
   recognized: string;
   language: string;
   level?: string;
+  track?: string;
+}
+
+function trackFocusLine(track?: string): string {
+  const t = TRACKS.find((tt) => tt.id === (track as TrackId));
+  if (!t || t.id === "general") return "";
+  return `Focus vocabulary and examples on ${t.focus} contexts.`;
 }
 
 export async function POST(req: Request) {
@@ -45,7 +53,10 @@ export async function POST(req: Request) {
   // Förberäkna similarity som baseline för modellen
   const baseScore = similarityScore(body.target, body.recognized);
 
+  const trackLine = trackFocusLine(body.track);
+
   const system = `You are a strict but encouraging pronunciation coach for a Swedish speaker learning ${lang.native} at CEFR ${level}.
+${trackLine}
 You ONLY ever reply in Swedish. Output a JSON object with this schema:
 {
   "score": number,            // 0-100 — how close the recognized text is to the target, accounting for typical TTS-recognizer noise
