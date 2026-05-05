@@ -86,14 +86,28 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
 
       <ProgressBar />
 
-      <Link href={`/learn/${lang}/mix`} className="block">
-        <Button size="lg" className="w-full">
-          <Dices className="h-5 w-5" /> Snabblektion (8 turer)
-        </Button>
-      </Link>
+      {/* Primärt fokus: lärvägen — användaren ska se direkt att lektioner finns nedan */}
+      <section aria-labelledby="path-heading" className="space-y-3">
+        <div className="flex items-end justify-between gap-3 flex-wrap">
+          <div>
+            <h2 id="path-heading" className="text-lg font-bold text-slate-100">Lektioner — följ din lärväg</h2>
+            <p className="text-xs text-slate-400">Lås upp nästa lektion genom att klara den föregående. Nivåerna går A1 → C1.</p>
+          </div>
+          <Link href={`/learn/${lang}/mix`}>
+            <Button size="sm" variant="secondary">
+              <Dices className="h-4 w-4" /> Snabblektion
+            </Button>
+          </Link>
+        </div>
+        <LessonPath lang={lang} />
+      </section>
 
-      <LessonPath lang={lang} />
-
+      {/* Sekundärt: fri övning utan progression */}
+      <section aria-labelledby="practice-heading" className="space-y-3 pt-2">
+        <div>
+          <h2 id="practice-heading" className="text-lg font-bold text-slate-100">Fri övning</h2>
+          <p className="text-xs text-slate-400">Träna enskilda färdigheter när du vill — påverkar inte lärvägen.</p>
+        </div>
       <Tabs defaultValue="flashcards">
         <TabsList>
           <TabsTrigger value="flashcards">Flashcards</TabsTrigger>
@@ -134,6 +148,7 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
           <ListenPickGame lang={lang} />
         </TabsContent>
       </Tabs>
+      </section>
     </motion.div>
   );
 }

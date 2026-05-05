@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="sv">
+    <html lang="sv" className="dark">
       <body className="min-h-screen antialiased">
         <OnboardingGuard />
         <NotificationsRegister />

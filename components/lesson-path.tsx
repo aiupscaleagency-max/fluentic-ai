@@ -14,8 +14,9 @@ import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Dialog, DialogHeader, DialogTitle, DialogContent } from "./ui/dialog";
-import { Lock, CheckCircle2, Play, Heart, PartyPopper, Sparkles } from "lucide-react";
+import { Lock, CheckCircle2, Play, Heart, PartyPopper, Sparkles, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { CEFR_DESCRIPTIONS, type CefrLevel } from "@/lib/level";
 
 // Visuell Duolingo-liknande lektionsväg.
 // Noder zig-zaggar, klar = grön glow, aktiv = pulserande violet, låst = grayscale.
@@ -71,12 +72,52 @@ export function LessonPath({ lang }: { lang: LangCode }) {
     <>
       <Card>
         <CardContent className="p-6">
-          <h3 className="font-semibold mb-1 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-violet-300" /> Din lärväg
+          <h3 className="font-semibold mb-1 flex items-center gap-2 text-base">
+            <Sparkles className="h-5 w-5 text-violet-300" /> Din lärväg
           </h3>
-          <p className="text-xs text-slate-400 mb-5">
-            Markeras klar när flashcards + lucka + lyssna är gjorda. +20 XP per lektion.
+          <p className="text-xs text-slate-400 mb-4">
+            Klara flashcards + lucka + lyssna för att markera lektionen som klar. +20 XP per lektion.
           </p>
+
+          {/* CEFR-progress-rad: visar antal klara per nivå */}
+          {(() => {
+            const byLevel = lessons.reduce<Record<string, { total: number; done: number }>>((acc, l) => {
+              acc[l.level] ??= { total: 0, done: 0 };
+              acc[l.level].total += 1;
+              if (completed.includes(l.id)) acc[l.level].done += 1;
+              return acc;
+            }, {});
+            const levelOrder: CefrLevel[] = ["A1", "A2", "B1", "B2", "C1"];
+            const ringColor: Record<CefrLevel, string> = {
+              A1: "border-emerald-400/60 text-emerald-200",
+              A2: "border-cyan-400/60 text-cyan-200",
+              B1: "border-violet-400/60 text-violet-200",
+              B2: "border-pink-400/60 text-pink-200",
+              C1: "border-amber-400/60 text-amber-200",
+            };
+            return (
+              <div className="mb-5 flex flex-wrap gap-2">
+                {levelOrder.filter((l) => byLevel[l]).map((lvl) => {
+                  const { total, done } = byLevel[lvl];
+                  const allDone = done === total;
+                  return (
+                    <div
+                      key={lvl}
+                      className={cn(
+                        "flex items-center gap-2 rounded-full border bg-white/5 px-3 py-1.5 text-xs font-medium",
+                        ringColor[lvl],
+                        allDone && "ring-1 ring-current/50"
+                      )}
+                    >
+                      <span className="font-bold">{lvl}</span>
+                      <span className="opacity-80">{done}/{total}</span>
+                      {allDone && <CheckCircle2 className="h-3.5 w-3.5" />}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           <div className="relative">
             {lessons.map((lesson, i) => {
@@ -86,8 +127,35 @@ export function LessonPath({ lang }: { lang: LangCode }) {
               const active = activeId === lesson.id;
               // zig-zag: even = vänster, odd = höger
               const right = i % 2 === 1;
+              // Visa nivå-rubrik när lektionens CEFR-nivå skiljer sig från föregående
+              const prevLevel = i > 0 ? lessons[i - 1].level : null;
+              const showLevelHeader = lesson.level !== prevLevel;
+              const levelClassByLevel: Record<CefrLevel, string> = {
+                A1: "from-emerald-400/30 to-emerald-300/10 border-emerald-300/30 text-emerald-200",
+                A2: "from-cyan-400/30 to-cyan-300/10 border-cyan-300/30 text-cyan-200",
+                B1: "from-violet-400/30 to-violet-300/10 border-violet-300/30 text-violet-200",
+                B2: "from-pink-400/30 to-pink-300/10 border-pink-300/30 text-pink-200",
+                C1: "from-amber-400/30 to-amber-300/10 border-amber-300/30 text-amber-200",
+              };
               return (
-                <div key={lesson.id} className="relative flex items-center mb-6 last:mb-0">
+                <React.Fragment key={lesson.id}>
+                {showLevelHeader && (
+                  <div className="relative my-5 first:mt-0">
+                    <div className={cn(
+                      "rounded-xl border bg-gradient-to-r px-4 py-2.5 flex items-center gap-3",
+                      levelClassByLevel[lesson.level]
+                    )}>
+                      <GraduationCap className="h-4 w-4 shrink-0" />
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 min-w-0">
+                        <span className="font-bold text-sm">Nivå {lesson.level}</span>
+                        <span className="text-xs opacity-80 truncate">
+                          {CEFR_DESCRIPTIONS[lesson.level].split(" — ")[1]}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="relative flex items-center mb-6 last:mb-0">
                   {/* Stigen-linje */}
                   {i < lessons.length - 1 && (
                     <span
@@ -163,6 +231,7 @@ export function LessonPath({ lang }: { lang: LangCode }) {
                   {/* Plats för balans (andra sidan, tom) */}
                   <div className="w-1/2" />
                 </div>
+                </React.Fragment>
               );
             })}
           </div>

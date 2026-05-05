@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Tailwind v4: gör dark-variant klassbaserad så vi kan tvinga dark globalt */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-brand-50: #eef2ff;
   --color-brand-500: #6366f1;
