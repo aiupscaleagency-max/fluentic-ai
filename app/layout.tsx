@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Nav } from "@/components/nav";
+import { OnboardingGuard } from "@/components/onboarding-guard";
 
 export const metadata: Metadata = {
   title: "Fluentic AI — Lär dig språk på det roliga sättet",
@@ -16,6 +17,7 @@ export default function RootLayout({
   return (
     <html lang="sv">
       <body className="min-h-screen antialiased">
+        <OnboardingGuard />
         <Nav />
         <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
       </body>

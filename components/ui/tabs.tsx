@@ -46,7 +46,7 @@ export function TabsList({ className, ...props }: React.HTMLAttributes<HTMLDivEl
     <div
       role="tablist"
       className={cn(
-        "inline-flex flex-wrap items-center justify-start gap-1 rounded-lg bg-slate-100 dark:bg-slate-800 p-1",
+        "inline-flex flex-wrap items-center justify-start gap-1 rounded-xl glass border-white/10 p-1",
         className,
       )}
       {...props}
@@ -72,10 +72,10 @@ export function TabsTrigger({
       aria-selected={active}
       onClick={() => ctx.setValue(value)}
       className={cn(
-        "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+        "px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200",
         active
-          ? "bg-white dark:bg-slate-900 shadow text-slate-900 dark:text-white"
-          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white",
+          ? "bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-md shadow-violet-500/30"
+          : "text-slate-300 hover:text-white hover:bg-white/5",
         className,
       )}
     >

@@ -2,6 +2,7 @@
 
 import { use } from "react";
 import * as React from "react";
+import { motion } from "framer-motion";
 import { notFound } from "next/navigation";
 import { isValidLangCode, getLanguage, LANGUAGES } from "@/lib/languages";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -19,7 +20,6 @@ import { TrackPicker } from "@/components/track-picker";
 import { ScrambleGame } from "@/components/games/scramble";
 import { ListenPickGame } from "@/components/games/listen-pick";
 import { Button } from "@/components/ui/button";
-import { OnboardingDialog } from "@/components/onboarding";
 import Link from "next/link";
 import { Mic, Dices } from "lucide-react";
 import { getActiveLesson } from "@/lib/storage";
@@ -32,8 +32,6 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
   }
   const language = getLanguage(lang)!;
 
-  // Vi spårar vilken lektion som är aktiv så att flashcards/cloze/listen vet
-  // vilken lektion deras "klart"-event ska räknas till.
   const [activeLesson, setActiveLesson] = React.useState<string | null>(null);
   React.useEffect(() => {
     function refresh() {
@@ -45,15 +43,18 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
   }, [lang]);
 
   return (
-    <div className="space-y-6">
-      <OnboardingDialog />
-
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6"
+    >
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="text-4xl">{language.flag}</div>
+          <div className="text-4xl drop-shadow">{language.flag}</div>
           <div>
             <h1 className="text-2xl font-bold">Lär dig {language.name.toLowerCase()}</h1>
-            <p className="text-sm text-slate-500" dir={language.dir} lang={lang}>
+            <p className="text-sm text-slate-400" dir={language.dir} lang={lang}>
               {language.native}
             </p>
           </div>
@@ -84,8 +85,8 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
       <ProgressBar />
 
       <Link href={`/learn/${lang}/mix`} className="block">
-        <Button size="lg" className="w-full bg-gradient-to-r from-fuchsia-500 to-indigo-600 hover:opacity-90 text-white">
-          <Dices className="h-5 w-5" /> 🎲 Snabblektion (8 turer)
+        <Button size="lg" className="w-full">
+          <Dices className="h-5 w-5" /> Snabblektion (8 turer)
         </Button>
       </Link>
 
@@ -131,6 +132,6 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
           <ListenPickGame lang={lang} />
         </TabsContent>
       </Tabs>
-    </div>
+    </motion.div>
   );
 }

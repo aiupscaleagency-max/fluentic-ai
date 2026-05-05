@@ -197,6 +197,39 @@ export function markOnboarded(): void {
   }
 }
 
+export function resetOnboarding(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem("fluentic.onboarded");
+  } catch {
+    // ignorera
+  }
+}
+
+// === Användarens valda språk (multi-select i onboarding) ===
+const SELECTED_LANGS_KEY = "fluentic.languages";
+
+export function getSelectedLanguages(): LangCode[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(SELECTED_LANGS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as LangCode[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function setSelectedLanguages(langs: LangCode[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(SELECTED_LANGS_KEY, JSON.stringify(langs));
+  } catch {
+    // ignorera
+  }
+}
+
 // Hjärtan — 5 max, regen 1/30 min
 const HEARTS_KEY = "fluentic.hearts";
 const HEARTS_MAX = 5;

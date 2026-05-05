@@ -3,8 +3,9 @@
 import { use } from "react";
 import { notFound, useRouter } from "next/navigation";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { isValidLangCode, getLanguage } from "@/lib/languages";
-import { VoiceCall } from "@/components/voice-call";
+import { VideoCall } from "@/components/video-call";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, MessageCircle, Drama } from "lucide-react";
@@ -27,9 +28,14 @@ export default function CallPage({ params }: { params: Promise<{ lang: string }>
   const [mode, setMode] = React.useState<"free" | "scenario">("free");
 
   return (
-    <div className="space-y-5">
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-5"
+    >
       <div className="flex items-center justify-between gap-3">
-        <Link href={`/learn/${lang}`} className="inline-flex items-center text-sm text-slate-600 hover:text-indigo-600">
+        <Link href={`/learn/${lang}`} className="inline-flex items-center text-sm text-slate-300 hover:text-cyan-300">
           <ArrowLeft className="h-4 w-4 mr-1" /> Tillbaka
         </Link>
         <LevelPicker lang={lang} />
@@ -39,7 +45,7 @@ export default function CallPage({ params }: { params: Promise<{ lang: string }>
         <h1 className="text-2xl font-bold flex items-center justify-center gap-2">
           {language.flag} Tala med tutor
         </h1>
-        <p className="text-sm text-slate-500">Tryck på mikrofonen och börja prata på {language.name.toLowerCase()}.</p>
+        <p className="text-sm text-slate-400">Tryck på mikrofonen och börja prata på {language.name.toLowerCase()}.</p>
       </div>
 
       <div className="flex justify-center gap-2">
@@ -60,7 +66,7 @@ export default function CallPage({ params }: { params: Promise<{ lang: string }>
       </div>
 
       {mode === "free" ? (
-        <VoiceCall
+        <VideoCall
           lang={lang}
           greeting={GREETINGS[lang]}
           onEnd={() => router.push(`/learn/${lang}`)}
@@ -68,16 +74,16 @@ export default function CallPage({ params }: { params: Promise<{ lang: string }>
       ) : (
         <Card>
           <CardContent className="p-6 space-y-4">
-            <div className="text-sm text-slate-500">Välj ett scenario:</div>
+            <div className="text-sm text-slate-400">Välj ett scenario:</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {SCENARIOS.map((s) => (
                 <Link key={s.id} href={`/learn/${lang}/scenario/${s.id}`} className="block">
-                  <Card className="hover:border-indigo-400 cursor-pointer h-full">
+                  <Card variant="gradient" className="cursor-pointer h-full hover:bg-white/10 transition-colors">
                     <CardContent className="p-4 flex items-center gap-3">
                       <span className="text-3xl">{s.emoji}</span>
                       <div>
                         <div className="font-semibold">{s.title}</div>
-                        <div className="text-xs text-slate-500">Nivå {s.level}</div>
+                        <div className="text-xs text-slate-400">Nivå {s.level}</div>
                       </div>
                     </CardContent>
                   </Card>
@@ -87,6 +93,6 @@ export default function CallPage({ params }: { params: Promise<{ lang: string }>
           </CardContent>
         </Card>
       )}
-    </div>
+    </motion.div>
   );
 }

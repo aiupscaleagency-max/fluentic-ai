@@ -1,19 +1,23 @@
-import { Scheduler } from "@/components/scheduler";
+"use client";
 
-export const metadata = {
-  title: "Schema — Fluentic AI",
-};
+import { motion } from "framer-motion";
+import { Scheduler } from "@/components/scheduler";
 
 export default function SchedulePage() {
   return (
-    <div className="space-y-4">
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-4"
+    >
       <div>
         <h1 className="text-2xl font-bold">Schema & påminnelser</h1>
-        <p className="text-slate-500 text-sm">
-          Lägg in dina lektioner, aktivera påminnelser och få en notis när det är dags att öva.
+        <p className="text-slate-400 text-sm">
+          Välj en mall för enklast möjliga start, eller bygg ditt eget upplägg.
         </p>
       </div>
       <Scheduler />
-    </div>
+    </motion.div>
   );
 }

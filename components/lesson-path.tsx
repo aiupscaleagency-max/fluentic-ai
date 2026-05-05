@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { motion } from "framer-motion";
 import type { LangCode } from "@/lib/languages";
 import { getLessons, type Lesson } from "@/lib/lessons";
 import {
@@ -13,15 +14,15 @@ import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Dialog, DialogHeader, DialogTitle, DialogContent } from "./ui/dialog";
-import { Lock, CheckCircle2, Play, Heart, PartyPopper } from "lucide-react";
+import { Lock, CheckCircle2, Play, Heart, PartyPopper, Sparkles } from "lucide-react";
+import { cn } from "@/lib/cn";
 
-// Visar lektioner som en vertikal "väg" där nästa låses upp när föregående klarats.
-// Klart = användaren har gjort flashcards + cloze + listen-repeat (auto-spårat).
+// Visuell Duolingo-liknande lektionsväg.
+// Noder zig-zaggar, klar = grön glow, aktiv = pulserande violet, låst = grayscale.
 export function LessonPath({ lang }: { lang: LangCode }) {
   const lessons = React.useMemo(() => getLessons(lang), [lang]);
   const [completed, setCompleted] = React.useState<string[]>([]);
   const [activeId, setActiveId] = React.useState<string | null>(null);
-  // Cache för antal aktiviteter klara per lektion-id
   const [stepsByLesson, setStepsByLesson] = React.useState<Record<string, number>>({});
   const [celebrate, setCelebrate] = React.useState<Lesson | null>(null);
 
@@ -69,77 +70,121 @@ export function LessonPath({ lang }: { lang: LangCode }) {
   return (
     <>
       <Card>
-        <CardContent className="p-6 space-y-3">
-          <h3 className="font-semibold">Din lärväg</h3>
-          <div className="space-y-2">
+        <CardContent className="p-6">
+          <h3 className="font-semibold mb-1 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-violet-300" /> Din lärväg
+          </h3>
+          <p className="text-xs text-slate-400 mb-5">
+            Markeras klar när flashcards + lucka + lyssna är gjorda. +20 XP per lektion.
+          </p>
+
+          <div className="relative">
             {lessons.map((lesson, i) => {
               const done = completed.includes(lesson.id);
               const unlocked = isUnlocked(i);
               const steps = stepsByLesson[lesson.id] ?? 0;
               const active = activeId === lesson.id;
+              // zig-zag: even = vänster, odd = höger
+              const right = i % 2 === 1;
               return (
-                <div
-                  key={lesson.id}
-                  className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${
-                    done
-                      ? "border-emerald-300 bg-emerald-50/60 dark:bg-emerald-950/20"
-                      : active
-                        ? "border-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20"
-                        : unlocked
-                          ? "border-indigo-200 dark:border-indigo-800"
-                          : "border-slate-200 dark:border-slate-800 opacity-60"
-                  }`}
-                >
-                  <div className="text-3xl">{lesson.emoji}</div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold">{lesson.number}. {lesson.title}</span>
-                      <Badge variant="outline">{lesson.level}</Badge>
-                      {!done && unlocked && (
-                        <Badge variant={steps === 3 ? "success" : "secondary"}>
-                          Steg klara: {steps}/3
-                        </Badge>
+                <div key={lesson.id} className="relative flex items-center mb-6 last:mb-0">
+                  {/* Stigen-linje */}
+                  {i < lessons.length - 1 && (
+                    <span
+                      className={cn(
+                        "absolute left-1/2 top-20 h-12 w-1 -translate-x-1/2 rounded-full",
+                        done ? "bg-gradient-to-b from-emerald-400 to-cyan-400" : "bg-white/10",
                       )}
-                      {active && !done && (
-                        <Badge>Aktiv</Badge>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-500">{lesson.goalSv}</p>
-                  </div>
-                  {done ? (
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                  ) : !unlocked ? (
-                    <Lock className="h-5 w-5 text-slate-400" />
-                  ) : active ? (
-                    <Badge variant="outline">Tränar nu</Badge>
-                  ) : (
-                    <Button size="sm" onClick={() => start(lesson.id)}>
-                      <Play className="h-4 w-4" /> Starta
-                    </Button>
+                    />
                   )}
+
+                  <div
+                    className={cn(
+                      "w-1/2 flex",
+                      right ? "justify-end pr-4" : "justify-start pl-4",
+                    )}
+                  >
+                    {/* Info-bubbla */}
+                    <motion.div
+                      initial={{ opacity: 0, x: right ? 20 : -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.06 }}
+                      className={cn(
+                        "rounded-2xl glass border-white/10 p-3 max-w-[260px]",
+                        !unlocked && "opacity-50",
+                      )}
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-sm">
+                          {lesson.number}. {lesson.title}
+                        </span>
+                        <Badge variant="outline">{lesson.level}</Badge>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-1">{lesson.goalSv}</p>
+                      <div className="mt-2 flex items-center gap-2 flex-wrap">
+                        {!done && unlocked && (
+                          <Badge variant={steps === 3 ? "success" : "secondary"}>
+                            {steps}/3 steg
+                          </Badge>
+                        )}
+                        {active && !done && <Badge>Aktiv</Badge>}
+                        {done && <Badge variant="success">Klar</Badge>}
+                        {!done && unlocked && !active && (
+                          <Button size="sm" onClick={() => start(lesson.id)} className="ml-auto">
+                            <Play className="h-3 w-3" /> Starta
+                          </Button>
+                        )}
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  {/* Noden i mitten */}
+                  <div
+                    className={cn(
+                      "absolute left-1/2 -translate-x-1/2 z-10 flex h-16 w-16 items-center justify-center rounded-full text-3xl border-2 transition-all",
+                      done
+                        ? "bg-gradient-to-br from-emerald-400 to-cyan-500 border-emerald-300 shadow-lg shadow-emerald-500/40"
+                        : active
+                          ? "bg-gradient-to-br from-violet-500 to-pink-500 border-violet-300 lesson-active-pulse"
+                          : unlocked
+                            ? "bg-white/10 border-white/20"
+                            : "bg-white/5 border-white/10 grayscale opacity-50",
+                    )}
+                  >
+                    {done ? (
+                      <CheckCircle2 className="h-7 w-7 text-white" />
+                    ) : !unlocked ? (
+                      <Lock className="h-6 w-6 text-slate-400" />
+                    ) : (
+                      <span>{lesson.emoji}</span>
+                    )}
+                  </div>
+
+                  {/* Plats för balans (andra sidan, tom) */}
+                  <div className="w-1/2" />
                 </div>
               );
             })}
           </div>
-          <p className="text-xs text-slate-500">
-            Lektionen markeras automatiskt som klar när du har gjort flashcards, lucka och lyssna & repetera. +20 XP per lektion.
-          </p>
         </CardContent>
       </Card>
 
       <Dialog open={celebrate !== null} onOpenChange={(o) => !o && setCelebrate(null)}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <PartyPopper className="h-5 w-5 text-indigo-600" /> Lektion klar!
+            <PartyPopper className="h-5 w-5 text-violet-300" /> Lektion klar!
           </DialogTitle>
         </DialogHeader>
         <DialogContent>
           {celebrate && (
             <div className="space-y-3">
               <p className="text-sm">
-                Du klarade <strong>{celebrate.title}</strong>. <span className="inline-flex items-center gap-1">+20 XP <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500" /></span>
+                Du klarade <strong>{celebrate.title}</strong>.{" "}
+                <span className="inline-flex items-center gap-1">
+                  +20 XP <Heart className="h-3.5 w-3.5 text-rose-400 fill-rose-400" />
+                </span>
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-400">
                 Hjärtat är ifyllt och nästa lektion är upplåst. Bra jobbat!
               </p>
               <div className="flex justify-end">

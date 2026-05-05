@@ -5,6 +5,11 @@
   --color-brand-500: #6366f1;
   --color-brand-600: #4f46e5;
   --color-brand-700: #4338ca;
+  /* Futuristisk palett: indigo + violet primär, cyan + pink accent */
+  --color-neon-violet: #8b5cf6;
+  --color-neon-indigo: #6366f1;
+  --color-neon-cyan: #22d3ee;
+  --color-neon-pink: #ec4899;
 }
 
 :root {
@@ -16,16 +21,43 @@ html, body {
 }
 
 body {
-  background: linear-gradient(180deg, #fafbff 0%, #f1f4ff 100%);
-  color: #0f172a;
+  background: #0b0918;
+  color: #f1f5f9;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  position: relative;
+  overflow-x: hidden;
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    background: linear-gradient(180deg, #020617 0%, #0b1220 100%);
-    color: #f1f5f9;
-  }
+/* === Animerad gradient-mesh-bakgrund === */
+/* Drivs av tre långsamma blobs som driver runt och ger en futuristisk känsla */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20%;
+  z-index: -2;
+  background:
+    radial-gradient(40% 35% at 20% 20%, rgba(99,102,241,0.45), transparent 60%),
+    radial-gradient(35% 30% at 80% 30%, rgba(34,211,238,0.35), transparent 60%),
+    radial-gradient(40% 35% at 60% 80%, rgba(236,72,153,0.32), transparent 60%),
+    radial-gradient(35% 30% at 15% 85%, rgba(139,92,246,0.45), transparent 60%);
+  filter: blur(60px) saturate(140%);
+  animation: mesh-drift 22s ease-in-out infinite alternate;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, rgba(11,9,24,0.55) 0%, rgba(11,9,24,0.85) 100%);
+  pointer-events: none;
+}
+
+@keyframes mesh-drift {
+  0%   { transform: translate3d(0%, 0%, 0) rotate(0deg); }
+  50%  { transform: translate3d(-3%, 2%, 0) rotate(2deg); }
+  100% { transform: translate3d(2%, -3%, 0) rotate(-2deg); }
 }
 
 /* Reservera utrymme för RTL-text så arabiska bryts korrekt */
@@ -33,6 +65,64 @@ body {
   text-align: right;
 }
 
+/* === Glassmorphism-utilities === */
+.glass {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.glass-strong {
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+}
+.glass-light {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* === Glow-utilities === */
+.glow-violet {
+  box-shadow: 0 0 24px rgba(139, 92, 246, 0.55), 0 0 48px rgba(139, 92, 246, 0.25);
+}
+.glow-cyan {
+  box-shadow: 0 0 24px rgba(34, 211, 238, 0.55), 0 0 48px rgba(34, 211, 238, 0.25);
+}
+.glow-pink {
+  box-shadow: 0 0 24px rgba(236, 72, 153, 0.55), 0 0 48px rgba(236, 72, 153, 0.25);
+}
+.text-gradient {
+  background: linear-gradient(120deg, #a78bfa 0%, #22d3ee 50%, #ec4899 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.gradient-border {
+  position: relative;
+  isolation: isolate;
+}
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(120deg, rgba(139,92,246,0.6), rgba(34,211,238,0.4), rgba(236,72,153,0.6));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* === Flip-card (flashcards) === */
 .flip-card {
   perspective: 1000px;
 }
@@ -59,25 +149,36 @@ body {
   transform: rotateY(180deg);
 }
 
-/* Voice-läge: pulserande avatar och lysande "lyssnar"-glow */
+/* === Voice-läge: pulserande avatar och lysande "lyssnar"-glow === */
 @keyframes voice-pulse {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.06); opacity: 0.92; }
 }
 @keyframes voice-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(99,102,241,0.55), 0 0 0 0 rgba(99,102,241,0.35); }
-  50% { box-shadow: 0 0 0 18px rgba(99,102,241,0), 0 0 0 36px rgba(99,102,241,0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34,211,238,0.55), 0 0 0 0 rgba(34,211,238,0.35); }
+  50% { box-shadow: 0 0 0 24px rgba(34,211,238,0), 0 0 0 48px rgba(34,211,238,0); }
 }
 .voice-avatar { transition: transform 200ms ease; }
 .voice-avatar.speaking { animation: voice-pulse 1.1s ease-in-out infinite; }
 .voice-avatar.listening { animation: voice-glow 1.6s ease-in-out infinite; }
 .voice-avatar.thinking { opacity: 0.85; }
 
-/* Diff-highlighting för uttalsövning */
-.diff-match { color: rgb(5 150 105); font-weight: 600; }
-.diff-mismatch { color: rgb(220 38 38); font-weight: 600; text-decoration: underline wavy rgb(220 38 38); }
+/* === Tutor-orb: animerad gradient-sphere för videosamtal === */
+@keyframes orb-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.tutor-orb {
+  background-size: 200% 200%;
+  animation: orb-shift 8s ease-in-out infinite;
+}
 
-/* Skak-animation för fel input i ordpussel */
+/* === Diff-highlighting för uttalsövning === */
+.diff-match { color: rgb(52 211 153); font-weight: 600; }
+.diff-mismatch { color: rgb(248 113 113); font-weight: 600; text-decoration: underline wavy rgb(248 113 113); }
+
+/* === Skak-animation för fel input === */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   20% { transform: translateX(-6px); }
@@ -86,3 +187,43 @@ body {
   80% { transform: translateX(4px); }
 }
 .animate-shake { animation: shake 0.4s ease-in-out; }
+
+/* === Floating orbs (hero) === */
+@keyframes float-y {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-22px); }
+}
+.float-slow { animation: float-y 7s ease-in-out infinite; }
+.float-med  { animation: float-y 5s ease-in-out infinite; }
+.float-fast { animation: float-y 4s ease-in-out infinite; }
+
+/* === Live-dot i video-call === */
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+.live-dot { animation: live-pulse 1.4s ease-in-out infinite; }
+
+/* === Waveform-bars (talar) === */
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.4); }
+  50%      { transform: scaleY(1); }
+}
+.wave-bar { animation: wave 0.9s ease-in-out infinite; transform-origin: bottom; }
+
+/* === Lesson-path: pulserande aktiv lektion === */
+@keyframes lesson-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.55); }
+  50%      { box-shadow: 0 0 0 12px rgba(139,92,246,0); }
+}
+.lesson-active-pulse { animation: lesson-pulse 1.8s ease-in-out infinite; }
+
+/* === Standard select/inputs på mörk bakgrund === */
+select, input[type="time"], input[type="number"], input[type="text"], input[type="email"] {
+  color-scheme: dark;
+}
+
+/* === Scrollbar tweaks === */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
