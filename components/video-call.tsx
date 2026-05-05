@@ -9,6 +9,8 @@ import { useLevel } from "@/lib/use-level";
 import { useTracks, getTrackMeta } from "@/lib/track";
 import { useExplainLang } from "@/lib/explain-lang";
 import { addXP } from "@/lib/storage";
+import { usePersona } from "@/lib/personas";
+import { addSpokenSeconds } from "@/lib/spoken-time";
 import { getSpeechRecognitionCtor, type SRInstance } from "@/lib/speech";
 import { cn } from "@/lib/cn";
 
@@ -50,7 +52,11 @@ export function VideoCall({
   const level = useLevel(lang);
   const tracks = useTracks(lang);
   const explainLang = useExplainLang(lang);
+  const userPersona = usePersona(lang);
   const [state, setState] = React.useState<State>("idle");
+  const [feedback, setFeedback] = React.useState<string | null>(null);
+  // Sekunder användaren faktiskt pratat — för Praktika-style streak baserad på talad tid
+  const sessionStartRef = React.useRef<number | null>(null);
   const [history, setHistory] = React.useState<Msg[]>([]);
   const [supported, setSupported] = React.useState(true);
   const [autoRestart] = React.useState(true);
@@ -160,15 +166,26 @@ export function VideoCall({
   function startListening() {
     if (!recRef.current || stoppedRef.current || muted) return;
     setError(null);
+    setFeedback(null);
     try {
       recRef.current.start();
       setState("listening");
+      sessionStartRef.current = Date.now();
     } catch {/* already started */}
+  }
+
+  function flushSpoken() {
+    if (sessionStartRef.current != null) {
+      const sec = (Date.now() - sessionStartRef.current) / 1000;
+      addSpokenSeconds(sec);
+      sessionStartRef.current = null;
+    }
   }
 
   function stopListening() {
     if (!recRef.current) return;
     try { recRef.current.stop(); } catch {/* tyst */}
+    flushSpoken();
     setState("idle");
   }
 
@@ -196,12 +213,15 @@ export function VideoCall({
           voice: true,
           systemOverride,
           explainLang,
+          personaId: userPersona?.id,
+          microFeedback: true,
         }),
       });
-      const data = (await res.json()) as { reply?: string; error?: string };
+      const data = (await res.json()) as { reply?: string; error?: string; feedback?: string | null };
       if (!res.ok || !data.reply) throw new Error(data.error ?? "AI-fel");
       const reply = data.reply;
       setHistory((h) => [...h, { role: "assistant", content: reply }]);
+      setFeedback(data.feedback ?? null);
       addXP(2);
       speak(reply);
     } catch (e) {
@@ -246,6 +266,7 @@ export function VideoCall({
 
   function endCall() {
     stoppedRef.current = true;
+    flushSpoken();
     if (recRef.current) {
       try { recRef.current.abort?.(); } catch {/* tyst */}
     }
@@ -257,7 +278,12 @@ export function VideoCall({
   }
 
   const persona = PERSONAS[lang];
-  const tutorName = scenarioMeta?.tutorRole ? scenarioMeta.tutorRole : `${persona.name} · ${persona.city} · ${persona.role}`;
+  // Användarens vald persona vinner — fall tillbaka till språk-baserad om ingen
+  const tutorName = scenarioMeta?.tutorRole
+    ? scenarioMeta.tutorRole
+    : userPersona
+      ? `${userPersona.emoji} ${userPersona.name} · ${language.name}`
+      : `${persona.name} · ${persona.city} · ${persona.role}`;
   const gradient = scenarioMeta?.gradient ?? persona.gradient;
 
   // Visa senaste yttrandet (rolling caption)
@@ -325,6 +351,17 @@ export function VideoCall({
           </p>
         )}
       </div>
+
+      {/* Mikro-feedback-toast — coaching-tips från senaste user-tur */}
+      {feedback && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mx-4 mt-2 rounded-xl border border-amber-400/40 bg-amber-500/15 px-3 py-2 text-xs text-amber-100 text-center"
+        >
+          💡 {feedback}
+        </motion.div>
+      )}
 
       {/* Rolling caption (sista yttrandet) */}
       {lastMsg && (

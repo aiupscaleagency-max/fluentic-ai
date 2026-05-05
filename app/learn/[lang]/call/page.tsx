@@ -10,10 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, MessageCircle, Drama } from "lucide-react";
 import { LevelPicker } from "@/components/level-picker";
+import { PersonaPicker } from "@/components/persona-picker";
+import { usePersona } from "@/lib/personas";
 import * as React from "react";
 import { SCENARIOS } from "@/lib/scenarios";
 
-const GREETINGS: Record<string, string> = {
+const FALLBACK_GREETINGS: Record<string, string> = {
   es: "¡Hola! ¿De qué te gustaría hablar hoy?",
   en: "Hi! What would you like to talk about today?",
   fr: "Salut ! De quoi aimerais-tu parler aujourd'hui ?",
@@ -26,6 +28,9 @@ export default function CallPage({ params }: { params: Promise<{ lang: string }>
   if (!isValidLangCode(lang)) notFound();
   const language = getLanguage(lang)!;
   const [mode, setMode] = React.useState<"free" | "scenario">("free");
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const persona = usePersona(lang as import("@/lib/languages").LangCode);
+  const greeting = persona?.greetings[lang as import("@/lib/languages").LangCode] ?? FALLBACK_GREETINGS[lang];
 
   return (
     <motion.div
@@ -38,7 +43,10 @@ export default function CallPage({ params }: { params: Promise<{ lang: string }>
         <Link href={`/learn/${lang}`} className="inline-flex items-center text-sm text-slate-300 hover:text-cyan-300">
           <ArrowLeft className="h-4 w-4 mr-1" /> Tillbaka
         </Link>
-        <LevelPicker lang={lang} />
+        <div className="flex items-center gap-2">
+          <PersonaPicker lang={lang as import("@/lib/languages").LangCode} />
+          <LevelPicker lang={lang} />
+        </div>
       </div>
 
       <div className="text-center space-y-1">
@@ -66,9 +74,11 @@ export default function CallPage({ params }: { params: Promise<{ lang: string }>
       </div>
 
       {mode === "free" ? (
+        // Re-mounta när persona ändras så att rätt greeting används från start
         <VideoCall
+          key={persona?.id ?? "none"}
           lang={lang}
-          greeting={GREETINGS[lang]}
+          greeting={greeting}
           onEnd={() => router.push(`/learn/${lang}`)}
         />
       ) : (

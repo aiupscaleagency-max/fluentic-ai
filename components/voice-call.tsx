@@ -11,6 +11,8 @@ import { useLevel } from "@/lib/use-level";
 import { useTracks } from "@/lib/track";
 import { useExplainLang } from "@/lib/explain-lang";
 import { addXP } from "@/lib/storage";
+import { usePersona } from "@/lib/personas";
+import { addSpokenSeconds } from "@/lib/spoken-time";
 
 import { getSpeechRecognitionCtor, type SRInstance } from "@/lib/speech";
 
@@ -30,8 +32,12 @@ export function VoiceCall({ lang, systemOverride, greeting, onEnd, endLabel = "A
   const level = useLevel(lang);
   const tracks = useTracks(lang);
   const explainLang = useExplainLang(lang);
+  const persona = usePersona(lang);
   const [state, setState] = React.useState<State>("idle");
   const [history, setHistory] = React.useState<Msg[]>([]);
+  const [feedback, setFeedback] = React.useState<string | null>(null);
+  // Mätare för "talad tid" — startar när lyssning öppnar, summeras till localStorage
+  const sessionStartRef = React.useRef<number | null>(null);
   const [supported, setSupported] = React.useState(true);
   const [autoRestart, setAutoRestart] = React.useState(true);
   const [rate, setRate] = React.useState(1.0);
@@ -113,17 +119,28 @@ export function VoiceCall({ lang, systemOverride, greeting, onEnd, endLabel = "A
   function startListening() {
     if (!recRef.current || stoppedRef.current) return;
     setError(null);
+    setFeedback(null);
     try {
       recRef.current.start();
       setState("listening");
+      sessionStartRef.current = Date.now();
     } catch {
       // Ignorera "already started"
+    }
+  }
+
+  function flushSpoken() {
+    if (sessionStartRef.current != null) {
+      const sec = (Date.now() - sessionStartRef.current) / 1000;
+      addSpokenSeconds(sec);
+      sessionStartRef.current = null;
     }
   }
 
   function stopListening() {
     if (!recRef.current) return;
     try { recRef.current.stop(); } catch {/* tyst */}
+    flushSpoken();
     setState("idle");
   }
 
@@ -143,12 +160,16 @@ export function VoiceCall({ lang, systemOverride, greeting, onEnd, endLabel = "A
           voice: true,
           systemOverride,
           explainLang,
+          personaId: persona?.id,
+          microFeedback: true,
         }),
       });
-      const data = (await res.json()) as { reply?: string; error?: string };
+      const data = (await res.json()) as { reply?: string; error?: string; feedback?: string | null };
       if (!res.ok || !data.reply) throw new Error(data.error ?? "AI-fel");
       const reply = data.reply;
       setHistory((h) => [...h, { role: "assistant", content: reply }]);
+      // Mikro-feedback visas som toast under avataren — auto-dismiss om ny tur startar
+      setFeedback(data.feedback ?? null);
       addXP(2);
       speak(reply);
     } catch (e) {
@@ -183,6 +204,7 @@ export function VoiceCall({ lang, systemOverride, greeting, onEnd, endLabel = "A
 
   function endCall() {
     stoppedRef.current = true;
+    flushSpoken();
     if (recRef.current) {
       try { recRef.current.abort?.(); } catch {/* tyst */}
     }
@@ -201,10 +223,14 @@ export function VoiceCall({ lang, systemOverride, greeting, onEnd, endLabel = "A
       <CardContent className="p-6 space-y-6">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-3xl">{language.flag}</span>
+            <span className="text-3xl">{persona ? persona.emoji : language.flag}</span>
             <div>
-              <div className="font-semibold">Röstsamtal</div>
-              <div className="text-xs text-slate-500">{language.native} · CEFR {level ?? "A2"}</div>
+              <div className="font-semibold">
+                {persona ? `${persona.name} · ${language.name}` : "Röstsamtal"}
+              </div>
+              <div className="text-xs text-slate-400">
+                {persona ? persona.pitch : language.native} · CEFR {level ?? "A2"}
+              </div>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={() => setShowSettings((s) => !s)}>
@@ -263,8 +289,14 @@ export function VoiceCall({ lang, systemOverride, greeting, onEnd, endLabel = "A
             className={`voice-avatar ${state} flex h-40 w-40 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white text-6xl shadow-lg`}
             aria-label={`Status: ${state}`}
           >
-            {language.flag}
+            {persona ? persona.emoji : language.flag}
           </div>
+
+          {feedback && (
+            <div className="w-full max-w-md rounded-xl border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100 text-center">
+              💡 {feedback}
+            </div>
+          )}
           <Badge variant={state === "listening" ? "success" : state === "speaking" ? "default" : "secondary"}>
             {state === "idle" && "Redo"}
             {state === "listening" && "Lyssnar…"}

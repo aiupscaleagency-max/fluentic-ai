@@ -2,9 +2,10 @@
 
 import * as React from "react";
 import { getProgress, getHearts, getDailyGoal } from "@/lib/storage";
+import { getSpokenToday, getSpokenStreak, SPOKEN_DAILY_GOAL_SECONDS } from "@/lib/spoken-time";
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { Flame, Sparkles, Heart, Snowflake } from "lucide-react";
+import { Flame, Sparkles, Heart, Snowflake, Mic } from "lucide-react";
 
 export function ProgressBar() {
   const [xp, setXp] = React.useState(0);
@@ -13,6 +14,9 @@ export function ProgressBar() {
   const [hearts, setHearts] = React.useState(5);
   const [todayXp, setTodayXp] = React.useState(0);
   const [goal, setGoal] = React.useState(20);
+  // Praktika-style: minuter spoken idag + streak baserat på 5+ min/dag
+  const [spokenSec, setSpokenSec] = React.useState(0);
+  const [spokenStreak, setSpokenStreak] = React.useState(0);
 
   React.useEffect(() => {
     function refresh() {
@@ -24,17 +28,24 @@ export function ProgressBar() {
       setTodayXp(p.todayDate === today ? p.todayXp : 0);
       setGoal(getDailyGoal());
       setHearts(getHearts().count);
+      setSpokenSec(getSpokenToday());
+      setSpokenStreak(getSpokenStreak());
     }
     refresh();
     const id = window.setInterval(refresh, 1500);
     window.addEventListener("fluentic:progress-changed", refresh);
     window.addEventListener("fluentic:hearts-changed", refresh);
+    window.addEventListener("fluentic:spoken-changed", refresh);
     return () => {
       window.clearInterval(id);
       window.removeEventListener("fluentic:progress-changed", refresh);
       window.removeEventListener("fluentic:hearts-changed", refresh);
+      window.removeEventListener("fluentic:spoken-changed", refresh);
     };
   }, []);
+
+  const spokenMin = Math.floor(spokenSec / 60);
+  const spokenGoalMin = Math.round(SPOKEN_DAILY_GOAL_SECONDS / 60);
 
   const pct = Math.min(100, Math.round((todayXp / goal) * 100));
   const radius = 22;
@@ -61,6 +72,7 @@ export function ProgressBar() {
           <div className="flex flex-wrap gap-2 items-center">
             <Badge variant="default" className="gap-1"><Sparkles className="h-3 w-3" />{xp} XP</Badge>
             <Badge variant="warning" className="gap-1"><Flame className="h-3 w-3" />{streak} dag{streak === 1 ? "" : "ars"}</Badge>
+            <Badge variant="secondary" className="gap-1"><Mic className="h-3 w-3" />{spokenMin} min · {spokenStreak}d</Badge>
             <Badge variant="secondary" className="gap-1"><Snowflake className="h-3 w-3" />{freezes}</Badge>
             <span className="inline-flex items-center gap-1">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -69,7 +81,10 @@ export function ProgressBar() {
             </span>
           </div>
         </div>
-        <span className="text-xs text-slate-500">{todayXp}/{goal} XP idag</span>
+        <div className="text-xs text-slate-500 text-right">
+          <div>{todayXp}/{goal} XP idag</div>
+          <div className="text-[11px] text-slate-400">Talad: {spokenMin}/{spokenGoalMin} min</div>
+        </div>
       </CardContent>
     </Card>
   );

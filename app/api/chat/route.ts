@@ -10,6 +10,7 @@ import {
   isExplainLang,
   type ExplainLang,
 } from "@/lib/explain-lang-server";
+import { isPersonaId, personaStyle, type PersonaId } from "@/lib/personas-server";
 
 export const runtime = "nodejs";
 
@@ -26,6 +27,10 @@ interface ChatBody {
   track?: string | string[];
   // Förklaringsspråk: vilket språk AI:n ska skriva förklaringar/översättningar PÅ
   explainLang?: ExplainLang;
+  // Persona: tonen på AI-tutorn (Sofia/Marco/Luna/Diego)
+  personaId?: PersonaId;
+  // Mikro-feedback: be modellen returnera en kort coaching-tipsrad efter sista user-turen
+  microFeedback?: boolean;
 }
 
 // Säker fallback om klienten skickar nåt vi inte känner igen
@@ -66,6 +71,7 @@ export async function POST(req: Request) {
     : "A2";
 
   const trackLine = trackFocusLine(body.track);
+  const personaLine = isPersonaId(body.personaId) ? personaStyle(body.personaId) : "";
 
   // Default sv om klienten missar att skicka explainLang (bakåtkompat)
   const explainLang: ExplainLang = isExplainLang(body.explainLang)
@@ -81,6 +87,7 @@ export async function POST(req: Request) {
 
 Adapt vocabulary, grammar, and sentence length to CEFR ${level}. ${levelGuidance(level)}
 ${trackLine}
+${personaLine}
 Reply ONLY in ${lang.native}. Do not switch to ${ex.englishName} or any other language.
 SPEAK LIKE A REAL PERSON — natural, conversational, modern spoken style. Use contractions, casual phrasing, and how people actually talk today (not textbook formal). Drop formality when the scene allows it.
 If you need to write meta-commentary, feedback or coaching to the user, use ${ex.englishName}.
@@ -91,6 +98,7 @@ Keep replies to 1-3 short sentences.`;
 The user's preferred explanation language is ${ex.englishName} — use it if you need to clarify something briefly.
 Adapt to CEFR ${level}. ${levelGuidance(level)}
 ${trackLine}
+${personaLine}
 SPEAK LIKE A REAL FRIEND — natural, conversational, modern spoken style. Use contractions, fillers (eh, bueno, well, alors), and how people ACTUALLY talk in 2026 — not textbook grammar. Avoid stiff or overly formal phrasing.
 Reply ONLY in ${lang.native} — no ${ex.englishName} translation, no markdown, no emoji.
 Keep replies to 1-2 sentences. Ask a follow-up question to keep the conversation going.`;
@@ -150,7 +158,41 @@ ${exampleTranslations[explainLang]}`;
     if (!reply) {
       return NextResponse.json({ error: "Tomt svar från modellen" }, { status: 500 });
     }
-    return NextResponse.json({ reply });
+
+    // Mikro-feedback: gör ett separat snabbt anrop som kollar senaste user-turen
+    // och returnerar en kort coaching-rad ("Du sa X, infödd skulle säga Y").
+    // Kostar en extra Gemini-call men håller huvudsvaret rent på målspråket.
+    let feedback: string | null = null;
+    if (body.microFeedback) {
+      try {
+        const lastUser = [...body.messages].reverse().find((m) => m.role === "user");
+        if (lastUser?.content) {
+          const fbModel = genAI.getGenerativeModel({
+            model: MODEL,
+            systemInstruction: `You are a language coach. The user is learning ${lang.native} at CEFR ${level}.
+Their last utterance: """${lastUser.content}"""
+If it has a clear grammar/word/phrasing issue, return a SINGLE short coaching line in ${ex.englishName}, format:
+"You said: <quote>. Better: <improved>." (max 18 words).
+If it's already natural, return exactly the word: SKIP
+Never return anything else.`,
+          });
+          const fbResp = await fbModel.generateContent({
+            contents: [{ role: "user", parts: [{ text: "evaluate" }] }],
+            generationConfig: {
+              maxOutputTokens: 80,
+              temperature: 0.2,
+              thinkingConfig: { thinkingBudget: 0 },
+            } as Record<string, unknown>,
+          });
+          const fb = (fbResp.response.text() ?? "").trim();
+          if (fb && fb.toUpperCase() !== "SKIP" && fb.length < 200) feedback = fb;
+        }
+      } catch {
+        // Mikro-feedback är best-effort — släpp tyst om det misslyckas
+      }
+    }
+
+    return NextResponse.json({ reply, feedback });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Okänt fel";
     return NextResponse.json({ error: msg }, { status: 500 });

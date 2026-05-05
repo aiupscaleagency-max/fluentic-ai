@@ -19,8 +19,12 @@ import { SCHEDULE_TEMPLATES, applyTemplate } from "@/lib/schedule-templates";
 import { Button } from "./ui/button";
 import { ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { PERSONAS, setPersona, type PersonaId } from "@/lib/personas";
+import { setLevel, type CefrLevel } from "@/lib/level";
+import { VoiceLevelTest } from "./voice-level-test";
 
-type Step = 1 | 2 | 3 | 4;
+// 6 steg nu: välkommen, språk, tracks, persona, nivå-test, schema
+type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
 // Magisk id för "hoppa över schema" — hanteras mutually exclusive
 const SKIP_TEMPLATE_ID = "__skip__";
@@ -41,6 +45,10 @@ export function OnboardingWizard() {
   const [tracksByLang, setTracksByLang] = React.useState<Record<string, TrackId[]>>({});
   // Multi: en lista av template-id (eller SKIP_TEMPLATE_ID)
   const [pickedTemplates, setPickedTemplates] = React.useState<string[]>([]);
+  // Persona: en per språk (default Sofia om hoppar över)
+  const [personaByLang, setPersonaByLang] = React.useState<Record<string, PersonaId>>({});
+  // Levels: bedöms via röst-test, fallback A1
+  const [levelByLang, setLevelByLang] = React.useState<Record<string, CefrLevel>>({});
 
   function go(next: Step) {
     setDirection(next > step ? 1 : -1);
@@ -93,29 +101,44 @@ export function OnboardingWizard() {
         setTracks(l, ["general"]);
       }
     });
-    // 3. Schema-mallar (om valda och inte skip) — applicera ALLA på första språket
+    // 3. Persona per språk — fallback Sofia (varm/vänlig) om inget val
+    selectedLangs.forEach((l) => {
+      setPersona(l, personaByLang[l] ?? "sofia");
+    });
+    // 4. Nivå per språk — sätts redan av VoiceLevelTest, men säkerställ A1 som fallback
+    selectedLangs.forEach((l) => {
+      if (!levelByLang[l]) setLevel(l, "A1");
+    });
+    // 5. Schema-mallar (om valda och inte skip) — applicera ALLA på första språket
     if (!pickedTemplates.includes(SKIP_TEMPLATE_ID)) {
       pickedTemplates.forEach((tid) => {
         const tpl = SCHEDULE_TEMPLATES.find((t) => t.id === tid);
         if (tpl) {
-          // Vi vill inte spamma alla språk — applicera på första valda
           applyTemplate(tpl, selectedLangs[0]);
         }
       });
     }
     markOnboarded();
     const first = selectedLangs[0] ?? "es";
-    router.push(`/learn/${first}`);
+    // Praktika-style: skicka direkt till röstsamtal med tutor-personan
+    router.push(`/learn/${first}/call`);
   }
 
   // Step 3 har "sub-steps" per språk för att inte överbelasta — räkna fram aktivt språk
   const [trackLangIdx, setTrackLangIdx] = React.useState(0);
   const trackLang = selectedLangs[trackLangIdx];
+  // Step 4 (persona) sub-step per språk
+  const [personaLangIdx, setPersonaLangIdx] = React.useState(0);
+  const personaLang = selectedLangs[personaLangIdx];
+  // Step 5 (level-test) sub-step per språk
+  const [levelLangIdx, setLevelLangIdx] = React.useState(0);
+  const levelLang = selectedLangs[levelLangIdx];
 
   function nextFromStep3() {
     if (trackLangIdx < selectedLangs.length - 1) {
       setTrackLangIdx((i) => i + 1);
     } else {
+      setPersonaLangIdx(0);
       go(4);
     }
   }
@@ -127,9 +150,43 @@ export function OnboardingWizard() {
     }
   }
 
+  function nextFromStep4() {
+    if (personaLangIdx < selectedLangs.length - 1) {
+      setPersonaLangIdx((i) => i + 1);
+    } else {
+      setLevelLangIdx(0);
+      go(5);
+    }
+  }
+  function backFromStep4() {
+    if (personaLangIdx > 0) {
+      setPersonaLangIdx((i) => i - 1);
+    } else {
+      setTrackLangIdx(selectedLangs.length - 1);
+      go(3);
+    }
+  }
+
+  function nextFromStep5() {
+    if (levelLangIdx < selectedLangs.length - 1) {
+      setLevelLangIdx((i) => i + 1);
+    } else {
+      go(6);
+    }
+  }
+  function backFromStep5() {
+    if (levelLangIdx > 0) {
+      setLevelLangIdx((i) => i - 1);
+    } else {
+      setPersonaLangIdx(selectedLangs.length - 1);
+      go(4);
+    }
+  }
+
   const canNext2 = selectedLangs.length > 0;
   const canNext3 = trackLang ? (tracksByLang[trackLang]?.length ?? 0) > 0 : false;
-  // Step 4 är klar så fort minst en mall är vald (eller skip)
+  const canNext4 = personaLang ? !!personaByLang[personaLang] : false;
+  // Step 6 är klar så fort minst en mall är vald (eller skip)
   const canFinish = pickedTemplates.length > 0;
 
   return (
@@ -143,7 +200,7 @@ export function OnboardingWizard() {
 
       {/* Progress dots */}
       <div className="relative z-10 flex justify-center gap-2 pt-4">
-        {[1, 2, 3, 4].map((n) => (
+        {[1, 2, 3, 4, 5, 6].map((n) => (
           <span
             key={n}
             className={cn(
@@ -162,7 +219,12 @@ export function OnboardingWizard() {
       <div className="relative z-10 flex-1 flex items-start sm:items-center justify-center pt-8">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
-            key={step === 3 ? `3-${trackLangIdx}` : step}
+            key={
+              step === 3 ? `3-${trackLangIdx}` :
+              step === 4 ? `4-${personaLangIdx}` :
+              step === 5 ? `5-${levelLangIdx}` :
+              step
+            }
             custom={direction}
             variants={slideVariants}
             initial="enter"
@@ -196,13 +258,38 @@ export function OnboardingWizard() {
                 total={selectedLangs.length}
               />
             )}
-            {step === 4 && (
-              <Step4
+            {step === 4 && personaLang && (
+              <StepPersona
+                lang={personaLang}
+                picked={personaByLang[personaLang] ?? null}
+                onPick={(id) => setPersonaByLang((cur) => ({ ...cur, [personaLang]: id }))}
+                onBack={backFromStep4}
+                onNext={nextFromStep4}
+                canNext={canNext4}
+                idx={personaLangIdx}
+                total={selectedLangs.length}
+              />
+            )}
+            {step === 5 && levelLang && (
+              <StepLevelTest
+                lang={levelLang}
+                onLevel={(lvl) => {
+                  setLevelByLang((cur) => ({ ...cur, [levelLang]: lvl }));
+                  nextFromStep5();
+                }}
+                onSkip={nextFromStep5}
+                onBack={backFromStep5}
+                idx={levelLangIdx}
+                total={selectedLangs.length}
+              />
+            )}
+            {step === 6 && (
+              <StepSchedule
                 picked={pickedTemplates}
                 onToggle={toggleTemplate}
                 onBack={() => {
-                  setTrackLangIdx(selectedLangs.length - 1);
-                  go(3);
+                  setLevelLangIdx(selectedLangs.length - 1);
+                  go(5);
                 }}
                 onFinish={finish}
                 canFinish={canFinish}
@@ -241,12 +328,14 @@ function Step1({ onNext }: { onNext: () => void }) {
 
       <div className="glass rounded-2xl p-6 max-w-lg mx-auto space-y-3">
         <p className="text-sm text-slate-300">
-          Du får välja:
+          Du sätter upp på en minut:
         </p>
         <ul className="text-sm space-y-2 text-left">
-          <li className="flex items-center gap-2"><Check className="h-4 w-4 text-cyan-400" /> Ett eller flera språk</li>
-          <li className="flex items-center gap-2"><Check className="h-4 w-4 text-cyan-400" /> Vad du vill kunna säga (vardag, business, resa…)</li>
-          <li className="flex items-center gap-2"><Check className="h-4 w-4 text-cyan-400" /> När du vill öva — en mall, en klick</li>
+          <li className="flex items-center gap-2"><Check className="h-4 w-4 text-cyan-400" /> Ett eller flera språk att lära dig</li>
+          <li className="flex items-center gap-2"><Check className="h-4 w-4 text-cyan-400" /> Mål — vardag, business, resa, akademi…</li>
+          <li className="flex items-center gap-2"><Check className="h-4 w-4 text-cyan-400" /> Tutor — Sofia, Marco, Luna eller Diego</li>
+          <li className="flex items-center gap-2"><Check className="h-4 w-4 text-cyan-400" /> Snabbt röst-test som hittar din CEFR-nivå</li>
+          <li className="flex items-center gap-2"><Check className="h-4 w-4 text-cyan-400" /> Träningsschema — en klick</li>
         </ul>
       </div>
 
@@ -453,8 +542,129 @@ function Step3({
   );
 }
 
-/* ---------- Step 4: schemamallar (MULTI) ---------- */
-function Step4({
+/* ---------- Step 4: välj persona (per språk) ---------- */
+function StepPersona({
+  lang,
+  picked,
+  onPick,
+  onBack,
+  onNext,
+  canNext,
+  idx,
+  total,
+}: {
+  lang: LangCode;
+  picked: PersonaId | null;
+  onPick: (id: PersonaId) => void;
+  onBack: () => void;
+  onNext: () => void;
+  canNext: boolean;
+  idx: number;
+  total: number;
+}) {
+  const language = LANGUAGES.find((l) => l.code === lang)!;
+  const accentRing: Record<string, string> = {
+    rose: "ring-rose-400 from-rose-500/25 to-pink-500/15",
+    violet: "ring-violet-400 from-violet-500/25 to-indigo-500/15",
+    amber: "ring-amber-400 from-amber-500/25 to-orange-500/15",
+    cyan: "ring-cyan-400 from-cyan-500/25 to-sky-500/15",
+  };
+  return (
+    <div className="space-y-6 px-4">
+      <div className="text-center space-y-2">
+        <div className="inline-flex items-center gap-2 text-sm text-slate-400">
+          <span>{idx + 1} av {total}</span>
+          <span>·</span>
+          <span className="text-2xl">{language.flag}</span>
+          <span>{language.name}</span>
+        </div>
+        <h2 className="text-3xl sm:text-4xl font-bold">Vem vill du prata med?</h2>
+        <p className="text-slate-300">
+          Din tutor sätter tonen i samtalen. Du kan byta när som helst.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {PERSONAS.map((p, i) => {
+          const sel = picked === p.id;
+          return (
+            <motion.button
+              key={p.id}
+              type="button"
+              onClick={() => onPick(p.id)}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: i * 0.05, duration: 0.3 }}
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className={cn(
+                "relative flex items-start gap-3 rounded-2xl p-4 text-left glass border-white/10 transition-all",
+                sel
+                  ? `ring-2 bg-gradient-to-br ${accentRing[p.accent]}`
+                  : "hover:border-white/30",
+              )}
+            >
+              <div className="text-4xl shrink-0">{p.emoji}</div>
+              <div className="min-w-0">
+                <div className="font-semibold text-base">{p.name}</div>
+                <div className="text-xs text-slate-300 mt-0.5">{p.pitch}</div>
+                <div className="text-xs text-slate-400 mt-1.5 leading-relaxed">{p.bio}</div>
+              </div>
+              {sel && (
+                <span className="absolute top-2 right-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-violet-500 text-white shrink-0">
+                  <Check className="h-3.5 w-3.5" />
+                </span>
+              )}
+            </motion.button>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center justify-between pt-2">
+        <Button variant="ghost" onClick={onBack}><ArrowLeft className="h-4 w-4" /> Tillbaka</Button>
+        <Button onClick={onNext} disabled={!canNext}>
+          {idx < total - 1 ? "Nästa språk" : "Fortsätt"} <ArrowRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Step 5: röst-baserad nivå-test (per språk) ---------- */
+function StepLevelTest({
+  lang,
+  onLevel,
+  onSkip,
+  onBack,
+  idx,
+  total,
+}: {
+  lang: LangCode;
+  onLevel: (lvl: CefrLevel) => void;
+  onSkip: () => void;
+  onBack: () => void;
+  idx: number;
+  total: number;
+}) {
+  const language = LANGUAGES.find((l) => l.code === lang)!;
+  return (
+    <div className="space-y-4 px-4">
+      <div className="text-center text-xs text-slate-400 inline-flex items-center justify-center gap-2 w-full">
+        <span>{idx + 1} av {total}</span>
+        <span>·</span>
+        <span className="text-lg">{language.flag}</span>
+        <span>{language.name}</span>
+      </div>
+      <VoiceLevelTest lang={lang} onDone={onLevel} onSkip={onSkip} />
+      <div className="flex items-center justify-start pt-2">
+        <Button variant="ghost" onClick={onBack}><ArrowLeft className="h-4 w-4" /> Tillbaka</Button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Step 6: schemamallar (MULTI) ---------- */
+function StepSchedule({
   picked,
   onToggle,
   onBack,
