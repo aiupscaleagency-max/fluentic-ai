@@ -19,10 +19,10 @@ npm run dev
 
 | Variabel | Krävs | Beskrivning |
 | --- | --- | --- |
-| `GOOGLE_API_KEY` | Ja | Google Gemini-nyckel. Hämtas på <https://aistudio.google.com/apikey>. Krävs för `/api/chat`, `/api/translate` och `/api/pronunciation`. |
+| `GOOGLE_AI_API_KEY` | Ja | Google AI Studio-nyckel. Hämtas på <https://aistudio.google.com/apikey>. Krävs för `/api/chat`, `/api/translate` och `/api/pronunciation`. Fallback-namn: `GOOGLE_API_KEY` eller `GEMINI_API_KEY`. |
 | `FLUENTIC_ACCESS_CODE` | Nej | Lösenord för access-gate. Sätts på publik deploy så att bara personer med koden kommer in. **Lämnas tom i lokal dev = ingen access-gate aktiveras**. |
 
-Om `GOOGLE_API_KEY` saknas returnerar API:erna `{ error: "GOOGLE_API_KEY saknas" }` med status 500 — UI visar felet.
+Om Google-nyckeln saknas returnerar API:erna `{ error: "Google API-nyckel saknas (sätt GOOGLE_AI_API_KEY)" }` med status 500 — UI visar felet.
 
 ### LLM-val + pris
 

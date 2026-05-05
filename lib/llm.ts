@@ -1,3 +1,3 @@
 // Centraliserad modellkonfiguration så Mike kan byta LLM på en rad.
-// Vi kör Google Gemini 2.0 Flash — billigaste produktiva modellen för es/en/fr/ar.
-export const MODEL = "gemini-2.0-flash-exp";
+// gemini-2.5-flash = aktiv GA-version (2.0 är låst för nya nycklar). ~$0.30/$2.50 per 1M tokens.
+export const MODEL = "gemini-2.5-flash";

@@ -4,6 +4,7 @@ import { getLanguage, isValidLangCode } from "@/lib/languages";
 import { MODEL } from "@/lib/llm";
 import { CEFR_LEVELS, type CefrLevel } from "@/lib/level";
 import { similarityScore } from "@/lib/similarity";
+import { getGoogleApiKey } from "@/lib/env";
 
 export const runtime = "nodejs";
 
@@ -15,9 +16,12 @@ interface PronBody {
 }
 
 export async function POST(req: Request) {
-  const apiKey = process.env.GOOGLE_API_KEY;
+  const apiKey = getGoogleApiKey();
   if (!apiKey) {
-    return NextResponse.json({ error: "GOOGLE_API_KEY saknas" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Google API-nyckel saknas (sätt GOOGLE_AI_API_KEY)" },
+      { status: 500 },
+    );
   }
 
   let body: PronBody;
@@ -65,7 +69,9 @@ Bedöm uttalet och ge tipsen på svenska. Var konkret om vilka ljud eller stavel
         responseMimeType: "application/json",
         maxOutputTokens: 500,
         temperature: 0.4,
-      },
+        // 2.5 Flash reasoning av — sparar tokens + svar trunkeras inte
+        thinkingConfig: { thinkingBudget: 0 },
+      } as Record<string, unknown>,
     });
 
     const resp = await model.generateContent(userPrompt);

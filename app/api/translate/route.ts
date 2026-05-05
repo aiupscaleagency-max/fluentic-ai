@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { MODEL } from "@/lib/llm";
 import { CEFR_LEVELS, levelGuidance, type CefrLevel } from "@/lib/level";
+import { getGoogleApiKey } from "@/lib/env";
 
 export const runtime = "nodejs";
 
@@ -23,10 +24,10 @@ const LANG_NAMES: Record<string, string> = {
 };
 
 export async function POST(req: Request) {
-  const apiKey = process.env.GOOGLE_API_KEY;
+  const apiKey = getGoogleApiKey();
   if (!apiKey) {
     return NextResponse.json(
-      { error: "GOOGLE_API_KEY saknas" },
+      { error: "Google API-nyckel saknas (sätt GOOGLE_AI_API_KEY)" },
       { status: 500 },
     );
   }
@@ -82,7 +83,9 @@ ${body.text}`;
         responseMimeType: "application/json",
         maxOutputTokens: 600,
         temperature: 0.2,
-      },
+        // 2.5 Flash kör reasoning by default — stäng av så svaret inte trunkeras + sparar tokens
+        thinkingConfig: { thinkingBudget: 0 },
+      } as Record<string, unknown>,
     });
 
     const resp = await model.generateContent(userPrompt);
