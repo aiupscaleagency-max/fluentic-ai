@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { getLanguage, isValidLangCode } from "@/lib/languages";
 import { MODEL } from "@/lib/llm";
@@ -15,9 +15,9 @@ interface PronBody {
 }
 
 export async function POST(req: Request) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "ANTHROPIC_API_KEY saknas" }, { status: 500 });
+    return NextResponse.json({ error: "GOOGLE_API_KEY saknas" }, { status: 500 });
   }
 
   let body: PronBody;
@@ -38,11 +38,11 @@ export async function POST(req: Request) {
     ? (body.level as CefrLevel)
     : "A2";
 
-  // Förberäkna similarity som baseline för Claude
+  // Förberäkna similarity som baseline för modellen
   const baseScore = similarityScore(body.target, body.recognized);
 
   const system = `You are a strict but encouraging pronunciation coach for a Swedish speaker learning ${lang.native} at CEFR ${level}.
-You ONLY ever reply in Swedish. Output a single JSON object — no prose, no markdown fences. Schema:
+You ONLY ever reply in Swedish. Output a JSON object with this schema:
 {
   "score": number,            // 0-100 — how close the recognized text is to the target, accounting for typical TTS-recognizer noise
   "tips": string[],           // 1-4 concrete pronunciation tips in Swedish (focus on sounds, stress, intonation)
@@ -55,19 +55,21 @@ Levenshtein-similarity baseline (för referens): ${baseScore}/100
 
 Bedöm uttalet och ge tipsen på svenska. Var konkret om vilka ljud eller stavelser som behöver tränas.`;
 
-  const client = new Anthropic({ apiKey });
   try {
-    const resp = await client.messages.create({
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({
       model: MODEL,
-      max_tokens: 500,
-      system,
-      messages: [{ role: "user", content: userPrompt }],
+      systemInstruction: system,
+      generationConfig: {
+        // Native JSON-läge — undviker att Gemini lägger till markdown-fences
+        responseMimeType: "application/json",
+        maxOutputTokens: 500,
+        temperature: 0.4,
+      },
     });
-    const raw = resp.content
-      .filter((c): c is Anthropic.TextBlock => c.type === "text")
-      .map((c) => c.text)
-      .join("\n")
-      .trim();
+
+    const resp = await model.generateContent(userPrompt);
+    const raw = (resp.response.text() ?? "").trim();
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) {
       return NextResponse.json({ error: "Ogiltigt svar från modellen" }, { status: 500 });

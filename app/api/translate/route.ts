@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { MODEL } from "@/lib/llm";
 import { CEFR_LEVELS, levelGuidance, type CefrLevel } from "@/lib/level";
@@ -23,10 +23,10 @@ const LANG_NAMES: Record<string, string> = {
 };
 
 export async function POST(req: Request) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { error: "ANTHROPIC_API_KEY saknas" },
+      { error: "GOOGLE_API_KEY saknas" },
       { status: 500 },
     );
   }
@@ -60,8 +60,9 @@ export async function POST(req: Request) {
     ? `Adapt vocabulary, grammar, sentence length to CEFR ${level}. ${levelGuidance(level)}`
     : "";
 
+  // Vi använder Geminis native JSON-läge (responseMimeType) för pålitlig output.
   const system = `You are a precise translator. ${levelLine}
-Output ONLY a JSON object — no prose, no markdown fences, no commentary. Schema:
+Output a JSON object with this schema:
 {
   "translation": string,         // The translation in ${toName}
   ${wantsTranslit ? `"transliteration": string, // Latin-script transliteration of the Arabic translation\n  ` : ""}"alternative": string         // One natural alternative phrasing in ${toName}
@@ -69,26 +70,25 @@ Output ONLY a JSON object — no prose, no markdown fences, no commentary. Schem
 
   const userPrompt = `Translate from ${fromName} to ${toName}:
 
-${body.text}
-
-Return only the JSON object as specified.`;
-
-  const client = new Anthropic({ apiKey });
+${body.text}`;
 
   try {
-    const resp = await client.messages.create({
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({
       model: MODEL,
-      max_tokens: 600,
-      system,
-      messages: [{ role: "user", content: userPrompt }],
+      systemInstruction: system,
+      generationConfig: {
+        // Tvinga JSON-output direkt från modellen — slipper post-parsing av prosa
+        responseMimeType: "application/json",
+        maxOutputTokens: 600,
+        temperature: 0.2,
+      },
     });
-    const raw = resp.content
-      .filter((c): c is Anthropic.TextBlock => c.type === "text")
-      .map((c) => c.text)
-      .join("\n")
-      .trim();
 
-    // Extrahera JSON robust även om modellen lägger till skräp
+    const resp = await model.generateContent(userPrompt);
+    const raw = (resp.response.text() ?? "").trim();
+
+    // Säkerhetsnät om Gemini ändå skulle slänga in något extra runt JSON:en
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) {
       return NextResponse.json({ error: "Ogiltigt svar från modellen" }, { status: 500 });

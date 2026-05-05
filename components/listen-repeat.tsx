@@ -10,11 +10,11 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Mic, MicOff, Volume2, ChevronRight } from "lucide-react";
 import { similarityScore } from "@/lib/similarity";
-import { addXP } from "@/lib/storage";
+import { addXP, markActivityDone } from "@/lib/storage";
 
 import { getSpeechRecognitionCtor, type SRInstance } from "@/lib/speech";
 
-export function ListenRepeat({ lang }: { lang: LangCode }) {
+export function ListenRepeat({ lang, lessonId }: { lang: LangCode; lessonId?: string }) {
   const language = getLanguage(lang)!;
   const level = useLevel(lang);
   const phrases = React.useMemo(() => {
@@ -27,8 +27,24 @@ export function ListenRepeat({ lang }: { lang: LangCode }) {
   const [listening, setListening] = React.useState(false);
   const [supported, setSupported] = React.useState(true);
   const recRef = React.useRef<SRInstance | null>(null);
+  // Vilka fras-index har övats med score (för auto-completion av lektion)
+  const [practiced, setPracticed] = React.useState<Set<number>>(new Set());
+  const reportedRef = React.useRef(false);
 
-  React.useEffect(() => { setIdx(0); setTranscript(""); setScore(null); }, [phrases]);
+  React.useEffect(() => {
+    setIdx(0); setTranscript(""); setScore(null);
+    setPracticed(new Set());
+    reportedRef.current = false;
+  }, [phrases, lessonId]);
+
+  // När alla fraser har övats minst en gång — markera listen-aktiviteten klar
+  React.useEffect(() => {
+    if (!lessonId || reportedRef.current) return;
+    if (phrases.length > 0 && practiced.size >= phrases.length) {
+      reportedRef.current = true;
+      markActivityDone(lessonId, "listen", lang);
+    }
+  }, [practiced, phrases.length, lessonId, lang]);
 
   const phrase = phrases[idx % phrases.length];
   const target = phrase.text[lang];
@@ -50,6 +66,12 @@ export function ListenRepeat({ lang }: { lang: LangCode }) {
       const s = similarityScore(target, text);
       setScore(s);
       if (s >= 70) addXP(5);
+      // Spara att den här frasen är övad — för auto-completion
+      setPracticed((p) => {
+        const n = new Set(p);
+        n.add(idx % phrases.length);
+        return n;
+      });
     };
     rec.onend = () => setListening(false);
     rec.onerror = () => setListening(false);

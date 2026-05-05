@@ -1,6 +1,7 @@
 "use client";
 
 import { use } from "react";
+import * as React from "react";
 import { notFound } from "next/navigation";
 import { isValidLangCode, getLanguage, LANGUAGES } from "@/lib/languages";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -18,6 +19,8 @@ import { Button } from "@/components/ui/button";
 import { OnboardingDialog } from "@/components/onboarding";
 import Link from "next/link";
 import { Mic } from "lucide-react";
+import { getActiveLesson } from "@/lib/storage";
+import type { LangCode } from "@/lib/languages";
 
 export default function LearnPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = use(params);
@@ -25,6 +28,18 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
     notFound();
   }
   const language = getLanguage(lang)!;
+
+  // Vi spårar vilken lektion som är aktiv så att flashcards/cloze/listen vet
+  // vilken lektion deras "klart"-event ska räknas till.
+  const [activeLesson, setActiveLesson] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    function refresh() {
+      setActiveLesson(getActiveLesson(lang as LangCode));
+    }
+    refresh();
+    window.addEventListener("fluentic:active-lesson-changed", refresh);
+    return () => window.removeEventListener("fluentic:active-lesson-changed", refresh);
+  }, [lang]);
 
   return (
     <div className="space-y-6">
@@ -77,13 +92,13 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
           <TabsTrigger value="cloze">Lucka</TabsTrigger>
         </TabsList>
         <TabsContent value="flashcards">
-          <Flashcards lang={lang} />
+          <Flashcards lang={lang} lessonId={activeLesson ?? undefined} />
         </TabsContent>
         <TabsContent value="conversation">
           <Conversation lang={lang} />
         </TabsContent>
         <TabsContent value="listen">
-          <ListenRepeat lang={lang} />
+          <ListenRepeat lang={lang} lessonId={activeLesson ?? undefined} />
         </TabsContent>
         <TabsContent value="pron">
           <Pronunciation lang={lang} />
@@ -95,7 +110,7 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
           <MatchGame lang={lang} />
         </TabsContent>
         <TabsContent value="cloze">
-          <ClozeGame lang={lang} />
+          <ClozeGame lang={lang} lessonId={activeLesson ?? undefined} />
         </TabsContent>
       </Tabs>
     </div>

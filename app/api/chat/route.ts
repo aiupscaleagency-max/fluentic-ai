@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { getLanguage, isValidLangCode } from "@/lib/languages";
 import { MODEL } from "@/lib/llm";
@@ -17,9 +17,9 @@ interface ChatBody {
 }
 
 export async function POST(req: Request) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "ANTHROPIC_API_KEY saknas" }, { status: 500 });
+    return NextResponse.json({ error: "GOOGLE_API_KEY saknas" }, { status: 500 });
   }
 
   let body: ChatBody;
@@ -74,20 +74,31 @@ Hola, ¿cómo estás hoy?
 *Hej, hur mår du idag?*`;
   }
 
-  const client = new Anthropic({ apiKey });
+  const maxOutputTokens = body.voice || body.systemOverride ? 250 : 400;
 
   try {
-    const resp = await client.messages.create({
+    // Gemini-SDK: skapa klient + modell. systemInstruction ger samma effekt som Anthropics "system".
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({
       model: MODEL,
-      max_tokens: body.voice || body.systemOverride ? 250 : 400,
-      system,
-      messages: body.messages.map((m) => ({ role: m.role, content: m.content })),
+      systemInstruction: system,
     });
-    const reply = resp.content
-      .filter((c): c is Anthropic.TextBlock => c.type === "text")
-      .map((c) => c.text)
-      .join("\n")
-      .trim();
+
+    // Mappa Anthropic/OpenAI-rollerna till Geminis "user"/"model"
+    const contents = body.messages.map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
+
+    const resp = await model.generateContent({
+      contents,
+      generationConfig: { maxOutputTokens, temperature: 0.8 },
+    });
+
+    const reply = (resp.response.text() ?? "").trim();
+    if (!reply) {
+      return NextResponse.json({ error: "Tomt svar från modellen" }, { status: 500 });
+    }
     return NextResponse.json({ reply });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Okänt fel";

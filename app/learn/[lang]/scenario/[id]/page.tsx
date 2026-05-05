@@ -89,6 +89,7 @@ export default function ScenarioPage({ params }: { params: Promise<{ lang: strin
         <VoiceCall
           lang={lang}
           systemOverride={scenario.personaForLang(lang)}
+          greeting={scenario.openingForLang(lang)}
           onEnd={handleEnd}
           endLabel="Avsluta scenario"
         />

@@ -21,7 +21,8 @@ export function ScenariosTab({ lang }: { lang: LangCode }) {
                 <span className="font-semibold">{s.title}</span>
                 <Badge variant="outline">{s.level}</Badge>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">{s.goalSv}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{s.descriptionSv}</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Mål: {s.goalSv}</p>
             </div>
             <Link href={`/learn/${lang}/scenario/${s.id}`}>
               <Button size="sm">

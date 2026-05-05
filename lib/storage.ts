@@ -284,3 +284,101 @@ export function markLessonCompleted(lang: LangCode, lessonId: string): void {
     }
   }
 }
+
+// ===== Aktiv lektion (vilken lektion användarens flikar tränar mot) =====
+const ACTIVE_LESSON_KEY_PREFIX = "fluentic.active-lesson.";
+
+export function getActiveLesson(lang: LangCode): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(ACTIVE_LESSON_KEY_PREFIX + lang);
+  } catch {
+    return null;
+  }
+}
+
+export function setActiveLesson(lang: LangCode, lessonId: string | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (lessonId) {
+      window.localStorage.setItem(ACTIVE_LESSON_KEY_PREFIX + lang, lessonId);
+    } else {
+      window.localStorage.removeItem(ACTIVE_LESSON_KEY_PREFIX + lang);
+    }
+    emit("fluentic:active-lesson-changed");
+  } catch {
+    // ignorera
+  }
+}
+
+// ===== Aktivitetsspårning per lektion =====
+// Vi sparar vilka av flashcards/cloze/listen användaren klarat av per lektion-id.
+// När alla 3 är gjorda räknas lektionen som klar och vi triggar fluentic:lesson-complete.
+const ACTIVITY_KEY_PREFIX = "fluentic.lesson-activity.";
+
+export type LessonActivity = "flashcards" | "cloze" | "listen";
+
+export interface LessonActivityState {
+  flashcards: boolean;
+  cloze: boolean;
+  listen: boolean;
+}
+
+const DEFAULT_ACTIVITY: LessonActivityState = {
+  flashcards: false,
+  cloze: false,
+  listen: false,
+};
+
+export function getLessonActivity(lessonId: string): LessonActivityState {
+  if (typeof window === "undefined") return { ...DEFAULT_ACTIVITY };
+  try {
+    const raw = window.localStorage.getItem(ACTIVITY_KEY_PREFIX + lessonId);
+    if (!raw) return { ...DEFAULT_ACTIVITY };
+    return { ...DEFAULT_ACTIVITY, ...(JSON.parse(raw) as Partial<LessonActivityState>) };
+  } catch {
+    return { ...DEFAULT_ACTIVITY };
+  }
+}
+
+export function isLessonComplete(lessonId: string): boolean {
+  const a = getLessonActivity(lessonId);
+  return a.flashcards && a.cloze && a.listen;
+}
+
+// Markerar en aktivitet som gjord. Returnerar true om hela lektionen blev klar nu (övergång false→true).
+export function markActivityDone(
+  lessonId: string,
+  activity: LessonActivity,
+  lang?: LangCode,
+): boolean {
+  if (typeof window === "undefined") return false;
+  const cur = getLessonActivity(lessonId);
+  if (cur[activity]) {
+    // Redan markerad — inget event, men returnera completeness
+    return false;
+  }
+  const next: LessonActivityState = { ...cur, [activity]: true };
+  try {
+    window.localStorage.setItem(ACTIVITY_KEY_PREFIX + lessonId, JSON.stringify(next));
+    emit("fluentic:activity-changed");
+  } catch {
+    // ignorera quota
+  }
+  const wasComplete = cur.flashcards && cur.cloze && cur.listen;
+  const isComplete = next.flashcards && next.cloze && next.listen;
+  if (!wasComplete && isComplete) {
+    // Auto-markera lektionen som klar och dela ut XP. lang krävs för persistens per språk.
+    if (lang) {
+      markLessonCompleted(lang, lessonId);
+      addXP(20);
+    }
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("fluentic:lesson-complete", { detail: { lessonId, lang } }),
+      );
+    }
+    return true;
+  }
+  return false;
+}

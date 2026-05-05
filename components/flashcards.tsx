@@ -8,11 +8,11 @@ import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Progress } from "./ui/progress";
-import { addXP, getSrsState, updateSrsCard } from "@/lib/storage";
+import { addXP, getSrsState, updateSrsCard, markActivityDone } from "@/lib/storage";
 import { Volume2, RotateCcw } from "lucide-react";
 import { useLevel } from "@/lib/use-level";
 
-export function Flashcards({ lang }: { lang: LangCode }) {
+export function Flashcards({ lang, lessonId }: { lang: LangCode; lessonId?: string }) {
   const language = getLanguage(lang)!;
   const level = useLevel(lang);
   const allVocab = React.useMemo(() => getVocab(lang, level), [lang, level]);
@@ -65,6 +65,19 @@ export function Flashcards({ lang }: { lang: LangCode }) {
     setFlipped(false);
     setStats({ knew: 0, missed: 0 });
   }
+
+  // Notifiera lektion-tracking en gång när rundan tar slut (all cards reviewed)
+  const reportedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!current && lessonId && (stats.knew > 0 || stats.missed > 0) && !reportedRef.current) {
+      reportedRef.current = true;
+      markActivityDone(lessonId, "flashcards", lang);
+    }
+  }, [current, lessonId, lang, stats]);
+  React.useEffect(() => {
+    // Reset rapporten när lektion eller språk byts
+    reportedRef.current = false;
+  }, [lessonId, lang, allVocab]);
 
   if (!current) {
     return (

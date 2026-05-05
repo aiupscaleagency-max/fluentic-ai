@@ -6,7 +6,7 @@ import { getLanguage } from "@/lib/languages";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { addXP, loseHeart, getHearts, refillHearts } from "@/lib/storage";
+import { addXP, loseHeart, getHearts, refillHearts, markActivityDone } from "@/lib/storage";
 import { Dialog, DialogHeader, DialogTitle, DialogContent } from "../ui/dialog";
 import { CheckCircle2, XCircle, ChevronRight, Heart } from "lucide-react";
 import { useLevel } from "@/lib/use-level";
@@ -170,7 +170,7 @@ function shuffle<T>(a: T[]): T[] {
   return o;
 }
 
-export function ClozeGame({ lang }: { lang: LangCode }) {
+export function ClozeGame({ lang, lessonId }: { lang: LangCode; lessonId?: string }) {
   const language = getLanguage(lang)!;
   const level = useLevel(lang);
 
@@ -228,8 +228,19 @@ export function ClozeGame({ lang }: { lang: LangCode }) {
     }
   }
 
+  // Markera lektionens cloze-aktivitet klar när rundan har gått ett varv
+  const reportedRef = React.useRef(false);
+  React.useEffect(() => {
+    reportedRef.current = false;
+  }, [pool, lessonId, lang]);
+
   function next() {
     if (idx + 1 >= order.length) {
+      // Hela rundan klar — räkna cloze-aktiviteten som gjord för aktiv lektion
+      if (lessonId && !reportedRef.current) {
+        reportedRef.current = true;
+        markActivityDone(lessonId, "cloze", lang);
+      }
       setOrder(shuffle(pool.map((_, i) => i)));
       setIdx(0);
     } else {
