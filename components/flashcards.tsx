@@ -11,13 +11,13 @@ import { Progress } from "./ui/progress";
 import { addXP, getSrsState, updateSrsCard, markActivityDone } from "@/lib/storage";
 import { Volume2, RotateCcw } from "lucide-react";
 import { useLevel } from "@/lib/use-level";
-import { useTrack } from "@/lib/track";
+import { useTracks } from "@/lib/track";
 
 export function Flashcards({ lang, lessonId }: { lang: LangCode; lessonId?: string }) {
   const language = getLanguage(lang)!;
   const level = useLevel(lang);
-  const track = useTrack(lang);
-  const allVocab = React.useMemo(() => getVocab(lang, level, track), [lang, level, track]);
+  const tracks = useTracks(lang);
+  const allVocab = React.useMemo(() => getVocab(lang, level, tracks), [lang, level, tracks]);
   // Bygg en kö där "due" kort kommer först (SRS-light)
   const [queue, setQueue] = React.useState<VocabEntry[]>([]);
   const [idx, setIdx] = React.useState(0);

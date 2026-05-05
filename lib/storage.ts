@@ -78,9 +78,17 @@ export function addXP(amount: number): ProgressState {
   // Belöna +1 freeze varje gång streaken passerar en ny multipel av 5
   const tier = Math.floor(streak / 5);
   const lastTier = Math.floor(lastFreezeAwardAt / 5);
+  let freezeAwarded = 0;
   if (tier > lastTier) {
-    freezes += tier - lastTier;
+    freezeAwarded = tier - lastTier;
+    freezes += freezeAwarded;
     lastFreezeAwardAt = streak;
+  }
+  // Skicka in-app event om freeze tilldelad — feed-komponenten plockar upp
+  if (freezeAwarded > 0 && typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent("fluentic:freeze-awarded", { detail: { count: freezeAwarded, streak } }),
+    );
   }
 
   const todayXp = cur.todayDate === today ? cur.todayXp + amount : amount;
@@ -289,6 +297,9 @@ export function loseHeart(): number {
 
 export function refillHearts(): void {
   writeHearts({ count: HEARTS_MAX, lastChangedAt: Date.now() });
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("fluentic:hearts-refilled"));
+  }
 }
 
 // Lektionspath — vilka lektioner användaren har klarat

@@ -7,6 +7,7 @@ import { cn } from "@/lib/cn";
 import { Sparkles, Languages, Calendar, Home, Flame, Heart, Settings } from "lucide-react";
 import { getProgress, getHearts } from "@/lib/storage";
 import { SettingsDrawer } from "./settings-drawer";
+import { NotificationFeed } from "./notification-feed";
 
 const items = [
   { href: "/", label: "Hem", icon: Home },
@@ -99,9 +100,11 @@ export function Nav() {
                 </Link>
               );
             })}
+            {/* Aviseringsklocka med badge — drawer hanteras inuti komponenten */}
+            <NotificationFeed />
             <button
               onClick={() => setSettingsOpen(true)}
-              className="ml-1 flex h-8 w-8 items-center justify-center rounded-lg text-slate-300 hover:bg-white/10 hover:text-white"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-300 hover:bg-white/10 hover:text-white"
               aria-label="Inställningar"
             >
               <Settings className="h-4 w-4" />

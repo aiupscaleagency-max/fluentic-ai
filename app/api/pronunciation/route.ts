@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getLanguage, isValidLangCode } from "@/lib/languages";
 import { MODEL } from "@/lib/llm";
 import { CEFR_LEVELS, type CefrLevel } from "@/lib/level";
-import { TRACKS, type TrackId } from "@/lib/track";
+import { TRACKS, type TrackId, tracksFocusLine } from "@/lib/track-data";
 import { similarityScore } from "@/lib/similarity";
 import { getGoogleApiKey } from "@/lib/env";
 import {
@@ -19,15 +19,18 @@ interface PronBody {
   recognized: string;
   language: string;
   level?: string;
-  track?: string;
+  // String (legacy) eller string[] (multi-track)
+  track?: string | string[];
   // Vilket språk tips & commonMistakes ska skrivas på
   explainLang?: ExplainLang;
 }
 
-function trackFocusLine(track?: string): string {
-  const t = TRACKS.find((tt) => tt.id === (track as TrackId));
-  if (!t || t.id === "general") return "";
-  return `Focus vocabulary and examples on ${t.focus} contexts.`;
+function trackFocusLine(track?: string | string[]): string {
+  if (!track) return "";
+  const arr = Array.isArray(track) ? track : [track];
+  const valid = arr.filter((t): t is TrackId => TRACKS.some((tt) => tt.id === t));
+  if (valid.length === 0) return "";
+  return tracksFocusLine(valid);
 }
 
 export async function POST(req: Request) {

@@ -17,8 +17,10 @@ import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
-import { Trash2, Bell, BellRing, Calendar, Plus, ChevronDown, Zap } from "lucide-react";
+import { Trash2, Calendar, Plus, ChevronDown, Zap } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { NotificationCard } from "./notification-card";
+import { pushNotification } from "@/lib/notifications";
 
 const WEEKDAYS: { d: Weekday; label: string; short: string }[] = [
   { d: 1, label: "Mån", short: "M" },
@@ -34,6 +36,13 @@ const TYPE_LABELS: Record<LessonType, string> = {
   flashcards: "Flashcards",
   conversation: "Konversation",
   listen: "Lyssna & repetera",
+};
+
+// Kort, snärtigt namn på lektionstyp för notifikations-titel
+const TYPE_SHORT: Record<LessonType, string> = {
+  flashcards: "Snabblektion",
+  conversation: "Konversationspass",
+  listen: "Lyssna-pass",
 };
 
 // Lektionsfärger för veckogrid (per type)
@@ -59,16 +68,22 @@ export function Scheduler() {
     if (typeof window !== "undefined") {
       if (!("Notification" in window)) {
         setPermission("unsupported");
-      } else {
-        setPermission(Notification.permission);
+        return;
       }
+      setPermission(Notification.permission);
       // Default-språk = användarens första valda språk
       const sel = getSelectedLanguages();
       if (sel.length > 0) setLanguage(sel[0]);
+      // Poll permission var 2:a sek så vi reagerar när användaren tillåter via NotificationCard
+      const id = window.setInterval(() => {
+        const p = Notification.permission;
+        setPermission((cur) => (cur !== p ? p : cur));
+      }, 2000);
+      return () => window.clearInterval(id);
     }
   }, []);
 
-  // Påminnelse-loop
+  // Påminnelse-loop — rik notifikation + in-app feed
   React.useEffect(() => {
     if (typeof window === "undefined") return;
     if (permission !== "granted") return;
@@ -86,8 +101,36 @@ export function Scheduler() {
           if (fired.has(key)) return;
           fired.add(key);
           const lang = getLanguage(l.language);
-          new Notification("Dags att öva " + (lang?.name ?? l.language) + "!", {
-            body: `${TYPE_LABELS[l.type]} • ${l.durationMin} min`,
+          const langName = lang?.name ?? l.language;
+          const title = `Dags att öva ${langName}!`;
+          // Rik body: "⏰ Snabblektion — 15 min på Spanska · Klicka för att börja"
+          const body = `⏰ ${TYPE_SHORT[l.type]} — ${l.durationMin} min på ${langName} · Klicka för att börja`;
+          // Mix-läget passar för alla schemalagda typer (det blandar ändå)
+          const url = `/learn/${l.language}/mix`;
+          try {
+            const n = new Notification(title, {
+              body,
+              tag: `fluentic-${l.id}-${stamp}`, // dedupera per slot
+              requireInteraction: true,
+              icon: "/icon-192.png",
+              badge: "/icon-192.png",
+              data: { url },
+            });
+            // Direkt-klick i samma tab (utan SW)
+            n.onclick = () => {
+              window.focus();
+              window.location.href = url;
+              n.close();
+            };
+          } catch {
+            // ignorera om browser inte stödjer alla options
+          }
+          // Lägg in i in-app feed också så användaren ser det i klockan
+          pushNotification({
+            type: "lesson-start",
+            title,
+            body: `${TYPE_SHORT[l.type]} — ${l.durationMin} min på ${langName}`,
+            link: url,
           });
         }
       });
@@ -123,59 +166,10 @@ export function Scheduler() {
     window.setTimeout(() => setAppliedToast(null), 2200);
   }
 
-  async function requestPerm() {
-    if (typeof window === "undefined" || !("Notification" in window)) return;
-    const p = await Notification.requestPermission();
-    setPermission(p);
-    if (p === "granted") {
-      new Notification("Påminnelser är aktiva", { body: "Vi pingar dig när det är dags att öva." });
-    }
-  }
-
   return (
     <div className="space-y-6">
-      {/* Notification-permission card */}
-      <Card variant={permission === "granted" ? "gradient" : "glass"}>
-        <CardContent className="p-5 flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3">
-            <motion.div
-              animate={permission === "granted" ? { rotate: [0, -8, 8, -6, 6, 0] } : {}}
-              transition={{ duration: 0.7, repeat: permission === "granted" ? Infinity : 0, repeatDelay: 4 }}
-              className={cn(
-                "inline-flex h-12 w-12 items-center justify-center rounded-2xl",
-                permission === "granted"
-                  ? "bg-gradient-to-br from-emerald-400 to-cyan-500 shadow-lg shadow-emerald-500/30"
-                  : "bg-white/10",
-              )}
-            >
-              {permission === "granted" ? <BellRing className="h-6 w-6" /> : <Bell className="h-6 w-6" />}
-            </motion.div>
-            <div>
-              <div className="font-semibold">
-                {permission === "granted"
-                  ? "Påminnelser är aktiva"
-                  : "Aktivera påminnelser"}
-              </div>
-              <div className="text-xs text-slate-400">
-                {permission === "granted"
-                  ? "Vi pingar dig när det är dags."
-                  : permission === "unsupported"
-                    ? "Din webbläsare stöder ej notiser."
-                    : permission === "denied"
-                      ? "Du har nekat — ändra i webbläsarens inställningar."
-                      : "Få en notis exakt när lektionen ska börja."}
-              </div>
-            </div>
-          </div>
-          <Button
-            variant={permission === "granted" ? "secondary" : "default"}
-            onClick={requestPerm}
-            disabled={permission === "unsupported" || permission === "granted"}
-          >
-            {permission === "granted" ? "Aktiva" : "Aktivera"}
-          </Button>
-        </CardContent>
-      </Card>
+      {/* Notification-permission card — visas bara när relevant */}
+      <NotificationCard />
 
       {/* Snabbmallar */}
       <div>

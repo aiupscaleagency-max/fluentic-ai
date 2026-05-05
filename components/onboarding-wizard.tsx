@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { LANGUAGES, type LangCode } from "@/lib/languages";
-import { TRACKS, setTrack, type TrackId } from "@/lib/track";
+import { setTracks, type TrackId } from "@/lib/track";
 import {
   markOnboarded,
   setSelectedLanguages,
@@ -22,6 +22,9 @@ import { cn } from "@/lib/cn";
 
 type Step = 1 | 2 | 3 | 4;
 
+// Magisk id för "hoppa över schema" — hanteras mutually exclusive
+const SKIP_TEMPLATE_ID = "__skip__";
+
 // Smooth slide-in/out för varje steg. Direction = +1 (next) / -1 (back).
 const slideVariants = {
   enter: (dir: number) => ({ x: dir > 0 ? 80 : -80, opacity: 0 }),
@@ -34,8 +37,10 @@ export function OnboardingWizard() {
   const [step, setStep] = React.useState<Step>(1);
   const [direction, setDirection] = React.useState(1);
   const [selectedLangs, setSelLangs] = React.useState<LangCode[]>([]);
-  const [tracksByLang, setTracksByLang] = React.useState<Record<string, TrackId>>({});
-  const [pickedTemplate, setPickedTemplate] = React.useState<string | null>(null);
+  // Multi: per språk en lista av tracks
+  const [tracksByLang, setTracksByLang] = React.useState<Record<string, TrackId[]>>({});
+  // Multi: en lista av template-id (eller SKIP_TEMPLATE_ID)
+  const [pickedTemplates, setPickedTemplates] = React.useState<string[]>([]);
 
   function go(next: Step) {
     setDirection(next > step ? 1 : -1);
@@ -48,24 +53,55 @@ export function OnboardingWizard() {
     );
   }
 
-  function pickTrack(lang: LangCode, track: TrackId) {
-    setTracksByLang((cur) => ({ ...cur, [lang]: track }));
+  // Multi-toggle av track per språk
+  function toggleTrack(lang: LangCode, track: TrackId) {
+    setTracksByLang((cur) => {
+      const existing = cur[lang] ?? [];
+      const next = existing.includes(track)
+        ? existing.filter((t) => t !== track)
+        : [...existing, track];
+      return { ...cur, [lang]: next };
+    });
+  }
+
+  // Multi-toggle av schemamall — SKIP är mutually exclusive
+  function toggleTemplate(id: string) {
+    setPickedTemplates((cur) => {
+      if (id === SKIP_TEMPLATE_ID) {
+        // Klick på Skip — om redan vald, avmarkera. Annars: bara skip.
+        return cur.includes(SKIP_TEMPLATE_ID) ? [] : [SKIP_TEMPLATE_ID];
+      }
+      // Klick på vanlig mall — ta bort skip om den var vald
+      const without = cur.filter((c) => c !== SKIP_TEMPLATE_ID);
+      return without.includes(id)
+        ? without.filter((c) => c !== id)
+        : [...without, id];
+    });
   }
 
   function finish() {
     // 1. Spara språk
     setSelectedLanguages(selectedLangs);
-    // 2. Spara per-språk-track
-    Object.entries(tracksByLang).forEach(([lang, track]) => {
-      setTrack(lang as LangCode, track);
+    // 2. Spara per-språk-tracks (multi). Default till general om tom.
+    Object.entries(tracksByLang).forEach(([lang, list]) => {
+      const final = list.length > 0 ? list : (["general"] as TrackId[]);
+      setTracks(lang as LangCode, final);
     });
-    // 3. Schema-mall (om vald)
-    if (pickedTemplate && pickedTemplate !== "skip") {
-      const tpl = SCHEDULE_TEMPLATES.find((t) => t.id === pickedTemplate);
-      if (tpl) {
-        // Applicera på första valda språk (vi vill inte spamma alla)
-        applyTemplate(tpl, selectedLangs[0]);
+    // Om användaren hoppade över ett språk i wizarden — sätt default general
+    selectedLangs.forEach((l) => {
+      if (!tracksByLang[l] || tracksByLang[l].length === 0) {
+        setTracks(l, ["general"]);
       }
+    });
+    // 3. Schema-mallar (om valda och inte skip) — applicera ALLA på första språket
+    if (!pickedTemplates.includes(SKIP_TEMPLATE_ID)) {
+      pickedTemplates.forEach((tid) => {
+        const tpl = SCHEDULE_TEMPLATES.find((t) => t.id === tid);
+        if (tpl) {
+          // Vi vill inte spamma alla språk — applicera på första valda
+          applyTemplate(tpl, selectedLangs[0]);
+        }
+      });
     }
     markOnboarded();
     const first = selectedLangs[0] ?? "es";
@@ -91,10 +127,10 @@ export function OnboardingWizard() {
     }
   }
 
-  const canNext1 = true;
   const canNext2 = selectedLangs.length > 0;
-  const canNext3 = trackLang ? !!tracksByLang[trackLang] : false;
-  const canFinish = pickedTemplate !== null;
+  const canNext3 = trackLang ? (tracksByLang[trackLang]?.length ?? 0) > 0 : false;
+  // Step 4 är klar så fort minst en mall är vald (eller skip)
+  const canFinish = pickedTemplates.length > 0;
 
   return (
     <div className="relative min-h-[80vh] flex flex-col">
@@ -151,8 +187,8 @@ export function OnboardingWizard() {
             {step === 3 && trackLang && (
               <Step3
                 lang={trackLang}
-                pickedTrack={tracksByLang[trackLang]}
-                onPick={(t) => pickTrack(trackLang, t)}
+                pickedTracks={tracksByLang[trackLang] ?? []}
+                onToggle={(t) => toggleTrack(trackLang, t)}
                 onBack={backFromStep3}
                 onNext={nextFromStep3}
                 canNext={canNext3}
@@ -162,8 +198,8 @@ export function OnboardingWizard() {
             )}
             {step === 4 && (
               <Step4
-                picked={pickedTemplate}
-                onPick={setPickedTemplate}
+                picked={pickedTemplates}
+                onToggle={toggleTemplate}
                 onBack={() => {
                   setTrackLangIdx(selectedLangs.length - 1);
                   go(3);
@@ -288,7 +324,7 @@ function Step2({
   );
 }
 
-/* ---------- Step 3: track per språk ---------- */
+/* ---------- Step 3: tracks per språk (MULTI) ---------- */
 const ONBOARDING_TRACKS = [
   { id: "general" as const, emoji: "🌍", label: "Allmän", desc: "Lär dig grunderna och bli bekväm" },
   { id: "business" as const, emoji: "💼", label: "Business", desc: "Möten, mejl, presentationer på språket" },
@@ -299,8 +335,8 @@ const ONBOARDING_TRACKS = [
 
 function Step3({
   lang,
-  pickedTrack,
-  onPick,
+  pickedTracks,
+  onToggle,
   onBack,
   onNext,
   canNext,
@@ -308,8 +344,8 @@ function Step3({
   total,
 }: {
   lang: LangCode;
-  pickedTrack: TrackId | undefined;
-  onPick: (t: TrackId) => void;
+  pickedTracks: TrackId[];
+  onToggle: (t: TrackId) => void;
   onBack: () => void;
   onNext: () => void;
   canNext: boolean;
@@ -337,17 +373,19 @@ function Step3({
           <span>{language.name}</span>
         </div>
         <h2 className="text-3xl sm:text-4xl font-bold">Vad ska du använda det till?</h2>
-        <p className="text-slate-300">Det här styr ord, scenarier och tutorns fokus.</p>
+        <p className="text-slate-300">
+          Välj ett eller flera mål — vi blandar in vokabulär från alla.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {ONBOARDING_TRACKS.map((t, i) => {
-          const isSel = pickedTrack === t.id;
+          const isSel = pickedTracks.includes(t.id);
           return (
             <motion.button
               key={t.id}
               type="button"
-              onClick={() => onPick(t.id)}
+              onClick={() => onToggle(t.id)}
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: i * 0.05, duration: 0.3 }}
@@ -355,7 +393,9 @@ function Step3({
               whileTap={{ scale: 0.98 }}
               className={cn(
                 "flex items-center gap-4 rounded-2xl p-4 text-left transition-all glass border-white/10",
-                isSel ? "ring-2 ring-cyan-400 glow-cyan" : "hover:border-white/30",
+                isSel
+                  ? "ring-2 ring-cyan-400 glow-cyan bg-gradient-to-br from-cyan-500/20 to-violet-500/15"
+                  : "hover:border-white/30",
               )}
             >
               <div className="text-4xl shrink-0">{t.emoji}</div>
@@ -364,7 +404,9 @@ function Step3({
                 <div className="text-xs text-slate-400 mt-0.5">{t.desc}</div>
               </div>
               {isSel && (
-                <Check className="h-5 w-5 text-cyan-400 shrink-0 ml-auto" />
+                <span className="ml-auto inline-flex h-6 w-6 items-center justify-center rounded-full bg-cyan-500 text-white shrink-0">
+                  <Check className="h-3.5 w-3.5" />
+                </span>
               )}
             </motion.button>
           );
@@ -411,35 +453,39 @@ function Step3({
   );
 }
 
-/* ---------- Step 4: schema-mallar ---------- */
+/* ---------- Step 4: schemamallar (MULTI) ---------- */
 function Step4({
   picked,
-  onPick,
+  onToggle,
   onBack,
   onFinish,
   canFinish,
 }: {
-  picked: string | null;
-  onPick: (id: string) => void;
+  picked: string[];
+  onToggle: (id: string) => void;
   onBack: () => void;
   onFinish: () => void;
   canFinish: boolean;
 }) {
+  const skipSelected = picked.includes(SKIP_TEMPLATE_ID);
+
   return (
     <div className="space-y-6 px-4">
       <div className="text-center space-y-2">
         <h2 className="text-3xl sm:text-4xl font-bold">När vill du öva?</h2>
-        <p className="text-slate-300">Välj en mall — du kan ändra eller lägga till fler senare.</p>
+        <p className="text-slate-300">
+          Välj alla rutiner som passar din dag — vi planerar ihop det.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {SCHEDULE_TEMPLATES.map((tpl, i) => {
-          const isSel = picked === tpl.id;
+          const isSel = picked.includes(tpl.id);
           return (
             <motion.button
               key={tpl.id}
               type="button"
-              onClick={() => onPick(tpl.id)}
+              onClick={() => onToggle(tpl.id)}
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: i * 0.05, duration: 0.3 }}
@@ -447,7 +493,10 @@ function Step4({
               whileTap={{ scale: 0.98 }}
               className={cn(
                 "flex items-center gap-4 rounded-2xl p-4 text-left transition-all glass border-white/10",
-                isSel ? "ring-2 ring-pink-400 glow-pink" : "hover:border-white/30",
+                isSel
+                  ? "ring-2 ring-pink-400 glow-pink bg-gradient-to-br from-pink-500/15 to-violet-500/15"
+                  : "hover:border-white/30",
+                skipSelected && !isSel && "opacity-50",
               )}
             >
               <div className="text-4xl shrink-0">{tpl.emoji}</div>
@@ -455,29 +504,42 @@ function Step4({
                 <div className="font-semibold">{tpl.title}</div>
                 <div className="text-xs text-slate-400 mt-0.5">{tpl.desc}</div>
               </div>
-              {isSel && <Check className="h-5 w-5 text-pink-400 shrink-0 ml-auto" />}
+              {isSel && (
+                <span className="ml-auto inline-flex h-6 w-6 items-center justify-center rounded-full bg-pink-500 text-white shrink-0">
+                  <Check className="h-3.5 w-3.5" />
+                </span>
+              )}
             </motion.button>
           );
         })}
 
+        {/* Skip-mall — mutually exclusive */}
         <motion.button
           type="button"
-          onClick={() => onPick("skip")}
+          onClick={() => onToggle(SKIP_TEMPLATE_ID)}
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.25, duration: 0.3 }}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           className={cn(
-            "flex items-center gap-4 rounded-2xl p-4 text-left glass border-white/10",
-            picked === "skip" ? "ring-2 ring-slate-400" : "hover:border-white/30",
+            "flex items-center gap-4 rounded-2xl p-4 text-left glass border-white/10 transition-all",
+            skipSelected
+              ? "ring-2 ring-slate-400 bg-slate-500/15"
+              : "hover:border-white/30",
+            !skipSelected && picked.length > 0 && "opacity-50",
           )}
         >
           <div className="text-4xl shrink-0">🪶</div>
           <div className="min-w-0">
-            <div className="font-semibold">Skip</div>
-            <div className="text-xs text-slate-400 mt-0.5">Hoppa över schema — jag fixar själv</div>
+            <div className="font-semibold">Hoppa över schema</div>
+            <div className="text-xs text-slate-400 mt-0.5">Jag fixar det själv senare</div>
           </div>
+          {skipSelected && (
+            <span className="ml-auto inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-500 text-white shrink-0">
+              <Check className="h-3.5 w-3.5" />
+            </span>
+          )}
         </motion.button>
       </div>
 

@@ -11,7 +11,7 @@ import { addXP, loseHeart, getHearts, refillHearts } from "@/lib/storage";
 import { Dialog, DialogHeader, DialogTitle, DialogContent } from "../ui/dialog";
 import { RotateCcw, ChevronRight, Heart, Volume2 } from "lucide-react";
 import { useLevel } from "@/lib/use-level";
-import { useTrack } from "@/lib/track";
+import { useTracks } from "@/lib/track";
 
 // Vi väljer 8 ord per session vars måltext har 3-12 tecken (annars blir det jobbigt med tiles)
 const SESSION_LEN = 8;
@@ -44,16 +44,16 @@ function buildLetters(word: string): Letter[] {
 export function ScrambleGame({ lang }: { lang: LangCode }) {
   const language = getLanguage(lang)!;
   const level = useLevel(lang);
-  const track = useTrack(lang);
+  const tracks = useTracks(lang);
 
   // Plocka pool — filtrera bort fraser med whitespace eller orimliga längder
   const pool = React.useMemo<VocabEntry[]>(() => {
-    const all = getVocab(lang, level, track).filter((v) => {
+    const all = getVocab(lang, level, tracks).filter((v) => {
       const w = v.word.trim();
       return w.length >= 3 && w.length <= 12 && !/\s/.test(w);
     });
     return shuffle(all).slice(0, SESSION_LEN);
-  }, [lang, level, track]);
+  }, [lang, level, tracks]);
 
   const [round, setRound] = React.useState(0);
   const [idx, setIdx] = React.useState(0);

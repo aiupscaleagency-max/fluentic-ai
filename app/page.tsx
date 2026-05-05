@@ -17,6 +17,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { DailyGoalRing } from "@/components/daily-goal";
+import { DayPlan } from "@/components/day-plan";
+import { NotificationCard } from "@/components/notification-card";
 
 export default function HomePage() {
   return (
@@ -74,6 +76,12 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+
+      {/* Notification permission CTA — visas bara när relevant */}
+      <NotificationCard />
+
+      {/* AI dagsplanerare — "Din dag" — visas bara om språk är valda */}
+      <DayPlan />
 
       {/* Dagligt mål */}
       <section className="grid sm:grid-cols-[auto_1fr] gap-5 items-center">

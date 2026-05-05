@@ -4,23 +4,27 @@ import * as React from "react";
 import Link from "next/link";
 import type { LangCode } from "@/lib/languages";
 import { SCENARIOS, type Scenario } from "@/lib/scenarios";
-import { useTrack } from "@/lib/track";
+import { useTracks, type TrackId } from "@/lib/track";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Play } from "lucide-react";
 
 export function ScenariosTab({ lang }: { lang: LangCode }) {
-  const track = useTrack(lang);
+  const tracks = useTracks(lang);
 
+  // Multi-track-prioritering: ett scenario som matchar NÅGON av användarens
+  // valda tracks räknas som "primary". Om bara general är vald — visa allt.
   const { primary, others } = React.useMemo(() => {
-    if (track === "general") {
+    const realTracks: TrackId[] = tracks.filter((t) => t !== "general");
+    if (realTracks.length === 0) {
       return { primary: SCENARIOS, others: [] as Scenario[] };
     }
-    const p = SCENARIOS.filter((s) => s.tracks.includes(track));
-    const o = SCENARIOS.filter((s) => !s.tracks.includes(track));
+    const matches = (s: Scenario) => s.tracks.some((st) => realTracks.includes(st));
+    const p = SCENARIOS.filter(matches);
+    const o = SCENARIOS.filter((s) => !matches(s));
     return { primary: p, others: o };
-  }, [track]);
+  }, [tracks]);
 
   function renderCard(s: Scenario) {
     return (

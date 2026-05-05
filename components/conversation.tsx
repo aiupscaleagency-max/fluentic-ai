@@ -9,7 +9,7 @@ import { Input } from "./ui/input";
 import { Send, Loader2, Volume2 } from "lucide-react";
 import { addXP } from "@/lib/storage";
 import { useLevel } from "@/lib/use-level";
-import { useTrack } from "@/lib/track";
+import { useTracks } from "@/lib/track";
 import { useExplainLang } from "@/lib/explain-lang";
 
 interface Msg {
@@ -20,7 +20,7 @@ interface Msg {
 export function Conversation({ lang }: { lang: LangCode }) {
   const language = getLanguage(lang)!;
   const level = useLevel(lang);
-  const track = useTrack(lang);
+  const tracks = useTracks(lang);
   const explainLang = useExplainLang(lang);
   const [messages, setMessages] = React.useState<Msg[]>([]);
   const [input, setInput] = React.useState("");
@@ -49,7 +49,7 @@ export function Conversation({ lang }: { lang: LangCode }) {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ language: lang, messages: next, level, track, explainLang }),
+        body: JSON.stringify({ language: lang, messages: next, level, track: tracks, explainLang }),
       });
       const data = (await res.json()) as { reply?: string; error?: string };
       if (!res.ok || !data.reply) {

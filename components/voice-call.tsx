@@ -8,7 +8,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Mic, MicOff, PhoneOff, Settings, Loader2 } from "lucide-react";
 import { useLevel } from "@/lib/use-level";
-import { useTrack } from "@/lib/track";
+import { useTracks } from "@/lib/track";
 import { useExplainLang } from "@/lib/explain-lang";
 import { addXP } from "@/lib/storage";
 
@@ -28,7 +28,7 @@ interface Props {
 export function VoiceCall({ lang, systemOverride, greeting, onEnd, endLabel = "Avsluta samtal" }: Props) {
   const language = getLanguage(lang)!;
   const level = useLevel(lang);
-  const track = useTrack(lang);
+  const tracks = useTracks(lang);
   const explainLang = useExplainLang(lang);
   const [state, setState] = React.useState<State>("idle");
   const [history, setHistory] = React.useState<Msg[]>([]);
@@ -139,7 +139,7 @@ export function VoiceCall({ lang, systemOverride, greeting, onEnd, endLabel = "A
           language: lang,
           messages: next,
           level,
-          track,
+          track: tracks,
           voice: true,
           systemOverride,
           explainLang,

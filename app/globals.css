@@ -197,6 +197,21 @@ body::after {
 .float-med  { animation: float-y 5s ease-in-out infinite; }
 .float-fast { animation: float-y 4s ease-in-out infinite; }
 
+/* === Shimmer för skeleton-loaders (day-plan) === */
+@keyframes shimmer-bg {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.04) 0%,
+    rgba(255,255,255,0.10) 50%,
+    rgba(255,255,255,0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-bg 1.6s linear infinite;
+}
+
 /* === Live-dot i video-call === */
 @keyframes live-pulse {
   0%, 100% { opacity: 1; }

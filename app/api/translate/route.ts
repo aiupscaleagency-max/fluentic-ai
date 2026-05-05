@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { MODEL } from "@/lib/llm";
 import { CEFR_LEVELS, levelGuidance, type CefrLevel } from "@/lib/level";
-import { TRACKS, type TrackId } from "@/lib/track";
+import { TRACKS, type TrackId, tracksFocusLine } from "@/lib/track-data";
 import { getGoogleApiKey } from "@/lib/env";
 import {
   explainGuidance,
@@ -17,15 +17,18 @@ interface TranslateBody {
   from: string;
   to: string;
   level?: string;
-  track?: string;
+  // String (legacy) eller string[] (multi-track)
+  track?: string | string[];
   // Vilket språk eventuella nivå-/förklaringsnoter ska skrivas på
   explainLang?: ExplainLang;
 }
 
-function trackFocusLine(track?: string): string {
-  const t = TRACKS.find((tt) => tt.id === (track as TrackId));
-  if (!t || t.id === "general") return "";
-  return `Focus vocabulary and examples on ${t.focus} contexts.`;
+function trackFocusLine(track?: string | string[]): string {
+  if (!track) return "";
+  const arr = Array.isArray(track) ? track : [track];
+  const valid = arr.filter((t): t is TrackId => TRACKS.some((tt) => tt.id === t));
+  if (valid.length === 0) return "";
+  return tracksFocusLine(valid);
 }
 
 // Vi tillåter "sv" + de fyra MVP-språken som källa/mål för tolken

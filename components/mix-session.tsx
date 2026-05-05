@@ -6,7 +6,7 @@ import { getLanguage } from "@/lib/languages";
 import { getVocab, type VocabEntry } from "@/lib/vocab";
 import { getPhrases, type Phrase } from "@/lib/phrases";
 import { useLevel } from "@/lib/use-level";
-import { useTrack } from "@/lib/track";
+import { useTracks } from "@/lib/track";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -99,9 +99,9 @@ interface Props {
 export function MixSession({ lang, lessonId }: Props) {
   const language = getLanguage(lang)!;
   const level = useLevel(lang);
-  const track = useTrack(lang);
+  const tracks = useTracks(lang);
 
-  const vocab = React.useMemo(() => getVocab(lang, level, track), [lang, level, track]);
+  const vocab = React.useMemo(() => getVocab(lang, level, tracks), [lang, level, tracks]);
   const phrases = React.useMemo(() => getPhrases(level), [level]);
 
   const [round, setRound] = React.useState(0);

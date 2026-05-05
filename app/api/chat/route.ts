@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getLanguage, isValidLangCode } from "@/lib/languages";
 import { MODEL } from "@/lib/llm";
 import { CEFR_LEVELS, levelGuidance, type CefrLevel } from "@/lib/level";
-import { TRACKS, type TrackId } from "@/lib/track";
+import { TRACKS, type TrackId, tracksFocusLine } from "@/lib/track-data";
 import { getGoogleApiKey } from "@/lib/env";
 import {
   explainGuidance,
@@ -22,16 +22,19 @@ interface ChatBody {
   // Roll-spel: överstyr default-systemprompt helt (vi lägger fortfarande på regler)
   systemOverride?: string;
   // Track styr vokabulär-fokus (general/business/travel/academic/casual)
-  track?: string;
+  // Stödjer både string (legacy) och string[] (multi-select).
+  track?: string | string[];
   // Förklaringsspråk: vilket språk AI:n ska skriva förklaringar/översättningar PÅ
   explainLang?: ExplainLang;
 }
 
 // Säker fallback om klienten skickar nåt vi inte känner igen
-function trackFocusLine(track?: string): string {
-  const t = TRACKS.find((tt) => tt.id === (track as TrackId));
-  if (!t || t.id === "general") return "";
-  return `Focus vocabulary and examples on ${t.focus} contexts.`;
+function trackFocusLine(track?: string | string[]): string {
+  if (!track) return "";
+  const arr = Array.isArray(track) ? track : [track];
+  const valid = arr.filter((t): t is TrackId => TRACKS.some((tt) => tt.id === t));
+  if (valid.length === 0) return "";
+  return tracksFocusLine(valid);
 }
 
 export async function POST(req: Request) {

@@ -8,7 +8,7 @@ import { Badge } from "./ui/badge";
 import { Mic, MicOff, Volume2, ArrowLeftRight, Loader2, MessagesSquare } from "lucide-react";
 import { getLevel } from "@/lib/level";
 import { isValidLangCode } from "@/lib/languages";
-import { getTrack } from "@/lib/track";
+import { getTracks } from "@/lib/track";
 import { getExplainLang } from "@/lib/explain-lang";
 
 // Tolken stödjer även "sv" som käll- och målspråk utöver MVP-fyran
@@ -94,7 +94,7 @@ export function Translator() {
     try {
       // Anpassa nivå + track + förklaringsspråk efter målspråket om vi översätter TILL ett av Fluentics språk
       const level = isValidLangCode(tg) ? getLevel(tg) : null;
-      const track = isValidLangCode(tg) ? getTrack(tg) : null;
+      const track = isValidLangCode(tg) ? getTracks(tg) : null;
       const explainLang = isValidLangCode(tg) ? getExplainLang(tg) : undefined;
       const res = await fetch("/api/translate", {
         method: "POST",

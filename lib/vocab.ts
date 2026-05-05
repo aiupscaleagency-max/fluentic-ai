@@ -195,14 +195,30 @@ function toEntry(r: RawEntry, lang: LangCode): VocabEntry {
 
 // Filtrerar på "vid eller under" CEFR-nivå + på track.
 // general = visa allt. annars visa bara entries som har den track:en (eller är general).
+// Stödjer både single-track (legacy) och multi-track (array) — multi gör OR mellan tracks
+// och inkluderar alltid general-ord.
 export function getVocab(
   lang: LangCode,
   level?: CefrLevel | null,
-  track?: TrackId | null,
+  track?: TrackId | TrackId[] | null,
 ): VocabEntry[] {
   let filtered = level ? ALL_RAW.filter((r) => isAtOrBelow(r.level, level)) : ALL_RAW;
-  if (track && track !== "general") {
-    filtered = filtered.filter((r) => r.tracks.includes(track) || r.tracks.includes("general"));
+
+  // Normalisera till lista
+  const tracks: TrackId[] = Array.isArray(track)
+    ? track
+    : track
+      ? [track]
+      : [];
+
+  // Om "general" finns med — visa allt (general inkluderar alla)
+  const hasGeneral = tracks.includes("general");
+  const realTracks: TrackId[] = tracks.filter((t) => t !== "general");
+
+  if (!hasGeneral && realTracks.length > 0) {
+    const matchesReal = (r: RawEntry) =>
+      r.tracks.some((t: TrackId) => (realTracks as TrackId[]).includes(t));
+    filtered = filtered.filter((r) => matchesReal(r) || r.tracks.includes("general"));
   }
   return filtered.map((r) => toEntry(r, lang));
 }

@@ -6,7 +6,7 @@ import type { LangCode } from "@/lib/languages";
 import { getLanguage } from "@/lib/languages";
 import { Mic, MicOff, PhoneOff, Volume2, VolumeX, Loader2 } from "lucide-react";
 import { useLevel } from "@/lib/use-level";
-import { useTrack } from "@/lib/track";
+import { useTracks, getTrackMeta } from "@/lib/track";
 import { useExplainLang } from "@/lib/explain-lang";
 import { addXP } from "@/lib/storage";
 import { getSpeechRecognitionCtor, type SRInstance } from "@/lib/speech";
@@ -48,7 +48,7 @@ export function VideoCall({
 }: Props) {
   const language = getLanguage(lang)!;
   const level = useLevel(lang);
-  const track = useTrack(lang);
+  const tracks = useTracks(lang);
   const explainLang = useExplainLang(lang);
   const [state, setState] = React.useState<State>("idle");
   const [history, setHistory] = React.useState<Msg[]>([]);
@@ -192,7 +192,7 @@ export function VideoCall({
           language: lang,
           messages: next,
           level,
-          track,
+          track: tracks,
           voice: true,
           systemOverride,
           explainLang,
@@ -308,7 +308,7 @@ export function VideoCall({
         <div className="text-center space-y-1">
           <div className="text-lg font-semibold">{tutorName}</div>
           <div className="text-xs text-slate-400">
-            {language.native} · CEFR {level ?? "A2"} · {track}
+            {language.native} · CEFR {level ?? "A2"} · {tracks.map((t) => getTrackMeta(t).shortLabel).join(" · ")}
           </div>
           <StateLabel state={state} />
         </div>
