@@ -65,13 +65,13 @@ export const PHRASES: Phrase[] = [
     id: "b1-p1",
     level: "B1",
     sv: "Jag skulle vilja ha en kaffe, tack.",
-    text: { es: "Quisiera un café, por favor.", en: "I would like a coffee, please.", fr: "Je voudrais un café, s'il vous plaît.", ar: "أريد قهوة من فضلك." },
+    text: { es: "Quisiera un café, por favor.", en: "I would like a coffee, please.", fr: "Je voudrais un café, s'il vous plaît.", ar: "أرغب في قهوة من فضلك." },
   },
   {
     id: "b1-p2",
     level: "B1",
     sv: "Talar du engelska?",
-    text: { es: "¿Hablas inglés?", en: "Do you speak English?", fr: "Parlez-vous anglais ?", ar: "هل تتحدث الإنجليزية؟" },
+    text: { es: "¿Hablas inglés?", en: "Do you speak English?", fr: "Tu parles anglais ?", ar: "هل تتحدث الإنجليزية؟" },
   },
   {
     id: "b1-p3",
@@ -126,7 +126,7 @@ export const PHRASES: Phrase[] = [
     text: {
       es: "Aunque llovía, dimos un largo paseo.",
       en: "Although it was raining, we took a long walk.",
-      fr: "Bien qu'il pleuvait, nous avons fait une longue promenade.",
+      fr: "Bien qu'il pleuve, nous avons fait une longue promenade.",
       ar: "رغم أنها كانت تمطر، قمنا بنزهة طويلة.",
     },
   },
@@ -134,7 +134,7 @@ export const PHRASES: Phrase[] = [
   {
     id: "c1-p1",
     level: "C1",
-    sv: "Det är inte någon dans på rosor men det är värt det.",
+    sv: "Det är ingen dans på rosor, men det är värt det.",
     text: {
       es: "No es un camino de rosas, pero vale la pena.",
       en: "It's no walk in the park, but it's worth it.",
@@ -161,7 +161,7 @@ export const PHRASES: Phrase[] = [
       es: "Su argumento no se sostuvo tras un examen más detallado.",
       en: "His argument did not hold up under closer scrutiny.",
       fr: "Son argument n'a pas tenu face à un examen plus approfondi.",
-      ar: "لم يصمد حجته أمام التدقيق.",
+      ar: "لم تصمد حجته أمام التدقيق.",
     },
   },
   {
@@ -172,7 +172,7 @@ export const PHRASES: Phrase[] = [
       es: "Lo tomo con pinzas.",
       en: "I take it with a grain of salt.",
       fr: "Je le prends avec des pincettes.",
-      ar: "آخذ ذلك بحذر." ,
+      ar: "آخذ ذلك بحذر.",
     },
   },
 ];

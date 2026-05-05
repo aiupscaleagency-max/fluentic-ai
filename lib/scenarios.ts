@@ -35,73 +35,73 @@ function pick(o: Openings, lang: LangCode): string {
 }
 
 const OPEN_CAFE: Openings = {
-  es: "¡Hola! Bienvenido al café. ¿Qué te apetece tomar?",
-  en: "Hi there! Welcome in. What can I get you today?",
-  fr: "Bonjour ! Bienvenue au café. Qu'est-ce que vous prenez ?",
-  ar: "مرحبا! أهلا بك في المقهى. ماذا تحب أن تشرب؟",
+  es: "¡Hola! Bienvenido. ¿Qué te apetece tomar?",
+  en: "Hi there! What can I get for you today?",
+  fr: "Bonjour ! Qu'est-ce que je vous sers ?",
+  ar: "مرحبًا! أهلًا بك. ماذا تحبّ أن تشرب؟",
 };
 
 const OPEN_AIRPORT: Openings = {
-  es: "Buenos días, ¿pasaporte y billete, por favor?",
+  es: "Buenos días. ¿Pasaporte y billete, por favor?",
   en: "Good morning. Passport and ticket, please?",
-  fr: "Bonjour, votre passeport et votre billet, s'il vous plaît ?",
+  fr: "Bonjour, votre passeport et votre billet, s'il vous plaît.",
   ar: "صباح الخير، جواز السفر والتذكرة من فضلك.",
 };
 
 const OPEN_PARTY: Openings = {
   es: "¡Hola! No nos conocemos, ¿verdad? Soy Alex.",
   en: "Hey! I don't think we've met — I'm Alex.",
-  fr: "Salut ! On ne s'est pas encore rencontrés, je crois. Moi c'est Alex.",
-  ar: "مرحبا! لا أعتقد أننا التقينا من قبل. أنا أليكس.",
+  fr: "Salut ! On ne se connaît pas encore, je crois. Moi c'est Alex.",
+  ar: "مرحبًا! لا أظنّ أننا التقينا من قبل. أنا أليكس.",
 };
 
 const OPEN_APARTMENT: Openings = {
-  es: "Hola, bienvenido. ¿Lista para ver el apartamento?",
+  es: "Hola, bienvenido. ¿Listo para ver el apartamento?",
   en: "Hi, welcome. Ready to take a look at the apartment?",
   fr: "Bonjour, bienvenue. Prêt à visiter l'appartement ?",
-  ar: "مرحبا، أهلا بك. هل أنت مستعد لرؤية الشقة؟",
+  ar: "مرحبًا، أهلًا بك. هل أنت مستعدّ لمشاهدة الشقّة؟",
 };
 
 const OPEN_DOCTOR: Openings = {
-  es: "Hola, soy el doctor. ¿Qué le trae hoy?",
+  es: "Hola, soy el doctor. ¿Qué le trae por aquí hoy?",
   en: "Hello, I'm the doctor. What brings you in today?",
   fr: "Bonjour, je suis le médecin. Qu'est-ce qui vous amène aujourd'hui ?",
-  ar: "مرحبا، أنا الطبيب. ما الذي أتى بك اليوم؟",
+  ar: "مرحبًا، أنا الطبيب. ما الذي أتى بك اليوم؟",
 };
 
 const OPEN_INTERVIEW: Openings = {
   es: "Buenos días, gracias por venir. Cuénteme un poco sobre usted.",
   en: "Good morning, thanks for coming in. Tell me a bit about yourself.",
-  fr: "Bonjour, merci d'être venu. Parlez-moi un peu de vous.",
-  ar: "صباح الخير، شكرا لحضورك. أخبرني قليلا عن نفسك.",
+  fr: "Bonjour, merci d'être venu(e). Parlez-moi un peu de vous.",
+  ar: "صباح الخير، شكرًا على حضورك. حدّثني قليلًا عن نفسك.",
 };
 
 const OPEN_RESTAURANT: Openings = {
-  es: "Buenas noches, ¿una mesa para cuántos? Aquí tiene la carta.",
+  es: "Buenas noches. ¿Una mesa para cuántos? Aquí tiene la carta.",
   en: "Good evening! Table for how many? Here's our menu.",
   fr: "Bonsoir, une table pour combien de personnes ? Voici la carte.",
-  ar: "مساء الخير، طاولة لكم شخصا؟ هذه قائمة الطعام.",
+  ar: "مساء الخير، طاولة لكم شخصًا؟ تفضّلوا قائمة الطعام.",
 };
 
 const OPEN_PHARMACY: Openings = {
   es: "Hola, ¿en qué puedo ayudarle hoy?",
   en: "Hi there, how can I help you today?",
   fr: "Bonjour, comment puis-je vous aider aujourd'hui ?",
-  ar: "مرحبا، كيف يمكنني مساعدتك اليوم؟",
+  ar: "مرحبًا، كيف يمكنني مساعدتك اليوم؟",
 };
 
 const OPEN_HOTEL: Openings = {
   es: "Buenas tardes, bienvenido. ¿Tiene una reserva a su nombre?",
   en: "Good afternoon, welcome. Do you have a reservation under your name?",
   fr: "Bonjour, bienvenue. Avez-vous une réservation à votre nom ?",
-  ar: "مساء الخير، أهلا بك. هل لديك حجز باسمك؟",
+  ar: "مساء الخير، أهلًا بك. هل لديك حجز باسمك؟",
 };
 
 const OPEN_COWORKER: Openings = {
-  es: "¡Hola! Vaya tiempo hoy, ¿eh? ¿Qué tal tu fin de semana?",
+  es: "¡Hola! Vaya tiempo hace hoy, ¿eh? ¿Qué tal tu fin de semana?",
   en: "Hey! Crazy weather today, huh? How was your weekend?",
-  fr: "Salut ! Quel temps aujourd'hui, hein ! Tu as passé un bon week-end ?",
-  ar: "مرحبا! طقس غريب اليوم، أليس كذلك؟ كيف كانت عطلتك؟",
+  fr: "Salut ! Quel temps de fou aujourd'hui, hein ! T'as passé un bon week-end ?",
+  ar: "مرحبًا! طقس غريب اليوم، أليس كذلك؟ كيف كانت عطلتك؟",
 };
 
 export const SCENARIOS: Scenario[] = [
