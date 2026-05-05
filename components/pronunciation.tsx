@@ -191,17 +191,18 @@ export function Pronunciation({ lang }: { lang: LangCode }) {
             </div>
 
             {score !== null && (
-              <div className="flex items-center gap-2 justify-center">
-                <Badge variant={score >= 80 ? "success" : score >= 50 ? "warning" : "outline"}>
-                  Likhet: {score}%
-                </Badge>
-                <Button size="sm" variant="outline" onClick={loadFeedback} disabled={feedbackLoading}>
-                  {feedbackLoading ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" /> Hämtar tips…</>
-                  ) : (
-                    <><Sparkles className="h-4 w-4" /> AI-tips</>
-                  )}
-                </Button>
+              <div className="flex flex-col sm:flex-row items-center gap-4 justify-center">
+                <ScoreGauge score={score} />
+                <div className="flex flex-col items-center sm:items-start gap-2">
+                  <div className="text-xs text-slate-400">Hur du uttalade frasen</div>
+                  <Button size="sm" variant="outline" onClick={loadFeedback} disabled={feedbackLoading}>
+                    {feedbackLoading ? (
+                      <><Loader2 className="h-4 w-4 animate-spin" /> Hämtar tips…</>
+                    ) : (
+                      <><Sparkles className="h-4 w-4" /> Få AI-tips</>
+                    )}
+                  </Button>
+                </div>
               </div>
             )}
 
@@ -212,8 +213,10 @@ export function Pronunciation({ lang }: { lang: LangCode }) {
             )}
 
             {feedback && (
-              <div className="rounded-lg border border-indigo-200 dark:border-indigo-900 bg-indigo-50/40 dark:bg-indigo-950/30 p-3 space-y-2">
-                <div className="font-semibold text-sm">AI-bedömning: {feedback.score}/100</div>
+              <div className="rounded-lg border border-indigo-300/40 bg-indigo-500/10 p-3 space-y-2">
+                <div className="font-semibold text-sm flex items-center gap-2">
+                  AI-bedömning: <ScoreGauge score={feedback.score} small />
+                </div>
                 {feedback.tips.length > 0 && (
                   <ul className="list-disc list-inside text-sm space-y-1">
                     {feedback.tips.map((tip, i) => (
@@ -222,7 +225,7 @@ export function Pronunciation({ lang }: { lang: LangCode }) {
                   </ul>
                 )}
                 {feedback.commonMistakes && (
-                  <p className="text-xs text-slate-600 dark:text-slate-400 italic">
+                  <p className="text-xs text-slate-300 italic">
                     {feedback.commonMistakes}
                   </p>
                 )}
@@ -232,5 +235,35 @@ export function Pronunciation({ lang }: { lang: LangCode }) {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// Stor cirkulär gauge — visuellt feedback på uttal
+function ScoreGauge({ score, small = false }: { score: number; small?: boolean }) {
+  const size = small ? 40 : 96;
+  const stroke = small ? 4 : 8;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const dash = (circumference * Math.max(0, Math.min(100, score))) / 100;
+  const color = score >= 80 ? "rgb(52 211 153)" : score >= 50 ? "rgb(251 191 36)" : "rgb(248 113 113)";
+  return (
+    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size}>
+        <circle cx={size / 2} cy={size / 2} r={radius} stroke="currentColor" strokeOpacity="0.12" strokeWidth={stroke} fill="none" />
+        <circle
+          cx={size / 2} cy={size / 2} r={radius}
+          stroke={color} strokeWidth={stroke} fill="none"
+          strokeLinecap="round"
+          strokeDasharray={`${dash} ${circumference}`}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <div className={small ? "text-xs font-bold" : "text-2xl font-bold"} style={{ color }}>
+          {score}
+        </div>
+        {!small && <div className="text-[10px] text-slate-400 -mt-0.5">av 100</div>}
+      </div>
+    </div>
   );
 }

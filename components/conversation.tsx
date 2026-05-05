@@ -11,6 +11,7 @@ import { addXP } from "@/lib/storage";
 import { useLevel } from "@/lib/use-level";
 import { useTracks } from "@/lib/track";
 import { useExplainLang } from "@/lib/explain-lang";
+import { usePersona } from "@/lib/personas";
 
 interface Msg {
   role: "user" | "assistant";
@@ -22,7 +23,10 @@ export function Conversation({ lang }: { lang: LangCode }) {
   const level = useLevel(lang);
   const tracks = useTracks(lang);
   const explainLang = useExplainLang(lang);
+  const persona = usePersona(lang);
   const [messages, setMessages] = React.useState<Msg[]>([]);
+  // Mikro-feedback per assistant-tur. Mappas till index i messages-arrayen.
+  const [feedbackByIdx, setFeedbackByIdx] = React.useState<Record<number, string>>({});
   const [input, setInput] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -49,13 +53,28 @@ export function Conversation({ lang }: { lang: LangCode }) {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ language: lang, messages: next, level, track: tracks, explainLang }),
+        body: JSON.stringify({
+          language: lang,
+          messages: next,
+          level,
+          track: tracks,
+          explainLang,
+          personaId: persona?.id,
+          microFeedback: true,
+        }),
       });
-      const data = (await res.json()) as { reply?: string; error?: string };
+      const data = (await res.json()) as { reply?: string; error?: string; feedback?: string | null };
       if (!res.ok || !data.reply) {
         throw new Error(data.error ?? "Något gick fel");
       }
-      setMessages((m) => [...m, { role: "assistant", content: data.reply! }]);
+      setMessages((m) => {
+        const newMsgs = [...m, { role: "assistant" as const, content: data.reply! }];
+        // Spara feedback mot index för senaste assistant-meddelandet
+        if (data.feedback) {
+          setFeedbackByIdx((prev) => ({ ...prev, [newMsgs.length - 1]: data.feedback! }));
+        }
+        return newMsgs;
+      });
       addXP(3);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -84,39 +103,47 @@ export function Conversation({ lang }: { lang: LangCode }) {
         >
           {messages.length === 0 && (
             <div className="text-center text-slate-500 py-12">
-              Säg hej till din AI-tutor på {language.name.toLowerCase()}!
+              {persona
+                ? <>Säg hej till <span className="font-semibold text-slate-200">{persona.emoji} {persona.name}</span> på {language.name.toLowerCase()}!</>
+                : <>Säg hej till din AI-tutor på {language.name.toLowerCase()}!</>}
               <div className="mt-2 text-xs">
-                Tutorn svarar på {language.name.toLowerCase()} med svensk översättning under.
+                Tutorn svarar på {language.name.toLowerCase()} med översättning under.
               </div>
             </div>
           )}
           {messages.map((m, i) => (
-            <div
-              key={i}
-              className={m.role === "user" ? "flex justify-end" : "flex justify-start"}
-            >
-              <div
-                className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm whitespace-pre-wrap ${
-                  m.role === "user"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-slate-100 dark:bg-slate-800"
-                }`}
-                dir={m.role === "assistant" && language.dir === "rtl" ? "auto" : "ltr"}
-                lang={m.role === "assistant" ? lang : "sv"}
-              >
-                {m.content}
-                {m.role === "assistant" && (
-                  <button
-                    type="button"
-                    onClick={() => speak(m.content)}
-                    aria-label="Lyssna"
-                    className="ml-2 inline-flex align-middle text-slate-500 hover:text-indigo-600"
-                  >
-                    <Volume2 className="h-3.5 w-3.5 inline" />
-                  </button>
-                )}
+            <React.Fragment key={i}>
+              <div className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+                <div
+                  className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm whitespace-pre-wrap ${
+                    m.role === "user"
+                      ? "bg-indigo-600 text-white"
+                      : "bg-slate-100 dark:bg-slate-800"
+                  }`}
+                  dir={m.role === "assistant" && language.dir === "rtl" ? "auto" : "ltr"}
+                  lang={m.role === "assistant" ? lang : "sv"}
+                >
+                  {m.content}
+                  {m.role === "assistant" && (
+                    <button
+                      type="button"
+                      onClick={() => speak(m.content)}
+                      aria-label="Lyssna"
+                      className="ml-2 inline-flex align-middle text-slate-500 hover:text-indigo-600"
+                    >
+                      <Volume2 className="h-3.5 w-3.5 inline" />
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
+              {feedbackByIdx[i] && (
+                <div className="flex justify-end">
+                  <div className="max-w-[80%] text-xs rounded-xl border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-amber-100">
+                    💡 {feedbackByIdx[i]}
+                  </div>
+                </div>
+              )}
+            </React.Fragment>
           ))}
           {loading && (
             <div className="flex items-center gap-2 text-sm text-slate-500">

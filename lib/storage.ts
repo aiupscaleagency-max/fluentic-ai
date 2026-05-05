@@ -29,6 +29,13 @@ function emit(event: string) {
   window.dispatchEvent(new CustomEvent(event));
 }
 
+// Helg-XP-boost: lördag (6) och söndag (0) ger 2x XP. Drivs av lokal tidszon.
+export const XP_WEEKEND_MULTIPLIER = 2;
+export function isXpBoostActive(now: Date = new Date()): boolean {
+  const day = now.getDay();
+  return day === 0 || day === 6;
+}
+
 // XP & streak
 export interface ProgressState {
   xp: number;
@@ -56,6 +63,10 @@ export function getProgress(): ProgressState {
 
 export function addXP(amount: number): ProgressState {
   const today = new Date().toISOString().slice(0, 10);
+  // Helg-boost: lördag/söndag ger 2x XP automatiskt
+  if (isXpBoostActive()) {
+    amount = amount * XP_WEEKEND_MULTIPLIER;
+  }
   const cur = getProgress();
   let streak = cur.streakDays;
   let freezes = cur.freezes;

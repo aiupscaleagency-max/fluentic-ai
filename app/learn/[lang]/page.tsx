@@ -21,9 +21,13 @@ import { ExplainLangPicker } from "@/components/explain-lang-picker";
 import { PersonaPicker } from "@/components/persona-picker";
 import { ScrambleGame } from "@/components/games/scramble";
 import { ListenPickGame } from "@/components/games/listen-pick";
+import { SentenceBuilder } from "@/components/games/sentence-builder";
+import { DailyChallengeCard } from "@/components/daily-challenge-card";
+import { WordOfTheDay } from "@/components/word-of-the-day";
+import { XpBoostBanner } from "@/components/xp-boost-banner";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Mic, Dices } from "lucide-react";
+import { Mic, Dices, Trophy } from "lucide-react";
 import { getActiveLesson } from "@/lib/storage";
 import type { LangCode } from "@/lib/languages";
 
@@ -66,6 +70,11 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
           <TrackPicker lang={lang} />
           <ExplainLangPicker lang={lang} />
           <PersonaPicker lang={lang} />
+          <Link href="/achievements">
+            <Button size="sm" variant="outline">
+              <Trophy className="h-4 w-4" /> Achievements
+            </Button>
+          </Link>
           <Link href={`/learn/${lang}/call`}>
             <Button size="sm">
               <Mic className="h-4 w-4" /> Tala med tutor
@@ -87,6 +96,12 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
       </div>
 
       <ProgressBar />
+
+      <XpBoostBanner />
+
+      {/* Dagliga hookar — Daily Challenge + Word of the day */}
+      <DailyChallengeCard lang={lang} />
+      <WordOfTheDay lang={lang} />
 
       {/* Primärt fokus: lärvägen — användaren ska se direkt att lektioner finns nedan */}
       <section aria-labelledby="path-heading" className="space-y-3">
@@ -120,6 +135,7 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
           <TabsTrigger value="match">Match</TabsTrigger>
           <TabsTrigger value="cloze">Lucka</TabsTrigger>
           <TabsTrigger value="scramble">Ordpussel</TabsTrigger>
+          <TabsTrigger value="builder">Bygg meningen</TabsTrigger>
           <TabsTrigger value="listenpick">Lyssna & välj</TabsTrigger>
         </TabsList>
         <TabsContent value="flashcards">
@@ -145,6 +161,9 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
         </TabsContent>
         <TabsContent value="scramble">
           <ScrambleGame lang={lang} />
+        </TabsContent>
+        <TabsContent value="builder">
+          <SentenceBuilder lang={lang} />
         </TabsContent>
         <TabsContent value="listenpick">
           <ListenPickGame lang={lang} />
