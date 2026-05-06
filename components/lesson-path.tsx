@@ -15,7 +15,7 @@ import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Dialog, DialogHeader, DialogTitle, DialogContent } from "./ui/dialog";
-import { Lock, CheckCircle2, Play, Heart, PartyPopper, Sparkles, GraduationCap, FastForward } from "lucide-react";
+import { Lock, CheckCircle2, Play, Heart, PartyPopper, Sparkles, GraduationCap, FastForward, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { CEFR_DESCRIPTIONS, type CefrLevel, getLevel } from "@/lib/level";
 
@@ -67,6 +67,28 @@ export function LessonPath({ lang }: { lang: LangCode }) {
 
   function start(id: string) {
     setActiveLesson(lang, id);
+  }
+
+  // Collapsible per CEFR-nivå — annars blir 40 lektioner ohanterligt långt scroll.
+  // Default: nivån som har aktiv lektion expanderad. Övriga collapsed.
+  const [expandedLevels, setExpandedLevels] = React.useState<Set<CefrLevel>>(new Set());
+  const activeLessonObj = lessons.find((l) => l.id === activeId);
+  React.useEffect(() => {
+    const next = new Set<CefrLevel>();
+    if (activeLessonObj) next.add(activeLessonObj.level);
+    else next.add("A1");
+    setExpandedLevels(next);
+    // Bara när active byter — manuell expand/collapse av användaren ska inte resettas
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId]);
+
+  function toggleLevel(lvl: CefrLevel) {
+    setExpandedLevels((cur) => {
+      const next = new Set(cur);
+      if (next.has(lvl)) next.delete(lvl);
+      else next.add(lvl);
+      return next;
+    });
   }
 
   return (
@@ -147,24 +169,40 @@ export function LessonPath({ lang }: { lang: LangCode }) {
                 B2: "from-pink-400/30 to-pink-300/10 border-pink-300/30 text-pink-200",
                 C1: "from-amber-400/30 to-amber-300/10 border-amber-300/30 text-amber-200",
               };
+              const isExpanded = expandedLevels.has(lesson.level);
+              // Räkna lektioner i denna nivå för att visa X/Y i headern
+              const inThisLevel = lessons.filter((l) => l.level === lesson.level);
+              const doneInLevel = inThisLevel.filter((l) => completed.includes(l.id)).length;
               return (
                 <React.Fragment key={lesson.id}>
                 {showLevelHeader && (
                   <div className="relative my-5 first:mt-0">
-                    <div className={cn(
-                      "rounded-xl border bg-gradient-to-r px-4 py-2.5 flex items-center gap-3",
-                      levelClassByLevel[lesson.level]
-                    )}>
+                    <button
+                      type="button"
+                      onClick={() => toggleLevel(lesson.level)}
+                      className={cn(
+                        "w-full rounded-xl border bg-gradient-to-r px-4 py-2.5 flex items-center gap-3 hover:brightness-110 transition-all",
+                        levelClassByLevel[lesson.level]
+                      )}
+                      aria-expanded={isExpanded}
+                    >
+                      {isExpanded
+                        ? <ChevronDown className="h-4 w-4 shrink-0" />
+                        : <ChevronRight className="h-4 w-4 shrink-0" />}
                       <GraduationCap className="h-4 w-4 shrink-0" />
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 min-w-0 flex-1 text-left">
                         <span className="font-bold text-sm">Nivå {lesson.level}</span>
                         <span className="text-xs opacity-80 truncate">
                           {CEFR_DESCRIPTIONS[lesson.level].split(" — ")[1]}
                         </span>
                       </div>
-                    </div>
+                      <span className="text-xs font-medium opacity-90">
+                        {doneInLevel}/{inThisLevel.length}
+                      </span>
+                    </button>
                   </div>
                 )}
+                {!isExpanded ? null : (
                 <div className="relative flex items-center mb-6 last:mb-0">
                   {/* Stigen-linje */}
                   {i < lessons.length - 1 && (
@@ -241,6 +279,7 @@ export function LessonPath({ lang }: { lang: LangCode }) {
                   {/* Plats för balans (andra sidan, tom) */}
                   <div className="w-1/2" />
                 </div>
+                )}
                 </React.Fragment>
               );
             })}
