@@ -52,13 +52,11 @@ export function InterpreterFab() {
 
   if (pathname && HIDE_ON.includes(pathname)) return null;
 
-  // Färg-set baserat på medlemskap
-  const orbBg = isMember
-    ? "linear-gradient(135deg, #06b6d4 0%, #3b82f6 40%, #8b5cf6 80%)"
-    : "linear-gradient(135deg, #475569 0%, #334155 100%)"; // grå för låst
-  const ringClass = isMember ? "ring-emerald-400/60" : "ring-amber-400/40";
-  const liveLabel = isMember ? "Live" : t("interp.locked");
-  const liveBg = isMember ? "bg-emerald-500/90" : "bg-amber-500/90";
+  // Adison har ALLTID grön LIVE-signal — det visar att tolken existerar och funkar.
+  // Låsning för free-users visas via tooltip + ett litet hänglås på orben (inte hela
+  // orben grå) så agenten fortfarande känns levande och produktdemo-värde syns.
+  const orbBg = "linear-gradient(135deg, #06b6d4 0%, #3b82f6 40%, #8b5cf6 80%)";
+  const ringClass = "ring-emerald-400/60";
 
   return (
     <Link
@@ -70,10 +68,10 @@ export function InterpreterFab() {
       aria-label="Adison"
     >
       <div className="relative">
-        {/* LIVE-translator-badge — eller "Lås upp med Pro" för free-users */}
-        <div className={`absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full ${liveBg} px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white shadow-lg whitespace-nowrap`}>
-          {isMember ? <span className="h-1.5 w-1.5 rounded-full bg-white live-dot" /> : <Lock className="h-2.5 w-2.5" />}
-          {liveLabel}
+        {/* LIVE-translator-badge — alltid grön så alla ser att tolken är på */}
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-emerald-500/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white shadow-lg shadow-emerald-500/40 whitespace-nowrap">
+          <span className="h-1.5 w-1.5 rounded-full bg-white live-dot" />
+          Live
         </div>
 
         {/* Tooltip vid hover */}
@@ -119,7 +117,7 @@ export function InterpreterFab() {
           )}
         </AnimatePresence>
 
-        {/* 3D-orb */}
+        {/* 3D-orb — alltid samma färg, men lägg på liten lock-pill för free-users */}
         <div
           className="tutor-orb h-14 w-14 rounded-full shadow-2xl shadow-cyan-500/40 hover:scale-105 transition-transform flex items-center justify-center text-white relative overflow-hidden"
           style={{ background: orbBg, backgroundSize: "200% 200%" }}
@@ -129,10 +127,17 @@ export function InterpreterFab() {
             style={{ background: "radial-gradient(circle at 30% 25%, rgba(255,255,255,0.6) 0%, transparent 50%)" }}
             aria-hidden
           />
-          {isMember
-            ? <Languages className="h-6 w-6 relative z-10 drop-shadow" />
-            : <Lock className="h-5 w-5 relative z-10 drop-shadow" />}
+          <Languages className="h-6 w-6 relative z-10 drop-shadow" />
         </div>
+        {/* Litet hänglås nere höger för free-users — diskret signal utan att döda LIVE-känslan */}
+        {!isMember && (
+          <span
+            className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-amber-500 border-2 border-[#0b0918] inline-flex items-center justify-center shadow-lg"
+            aria-hidden
+          >
+            <Lock className="h-2.5 w-2.5 text-white" />
+          </span>
+        )}
 
         {/* Pulsande ring */}
         <span className={`absolute inset-0 rounded-full ring-2 ${ringClass} animate-ping pointer-events-none`} aria-hidden />

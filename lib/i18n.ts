@@ -70,9 +70,9 @@ export const STRINGS: Dict = {
 
   // Maritza chat
   "maritza.title":       { sv: "Maritza – din lärare",                     es: "Maritza – tu profesora",         en: "Maritza – your teacher" },
-  "maritza.greeting":    { sv: "Hej! Jag är Maritza. Fråga vad du vill om språket eller appen.",
-                            es: "¡Hola! Soy Maritza. Pregúntame lo que quieras sobre el idioma o la app.",
-                            en: "Hi! I'm Maritza. Ask me anything about the language or the app." },
+  "maritza.greeting":    { sv: "Hej, jag heter Maritza. Ställ frågor om språket eller appen så hjälper jag dig.",
+                            es: "Hola, soy Maritza. Pregúntame lo que necesites sobre el idioma o la app y te ayudo.",
+                            en: "Hello, I'm Maritza. Ask anything about the language or the app and I'll help." },
   "maritza.placeholder": { sv: "Skriv en fråga…",                          es: "Escribe una pregunta…",          en: "Type a question…" },
   "maritza.empty":       { sv: "Ställ en fråga, så hjälper jag dig.",      es: "Hazme una pregunta y te ayudo.", en: "Ask me a question and I'll help." },
 
@@ -197,9 +197,9 @@ export const STRINGS: Dict = {
   "agent.adison.intro":   { sv: "Hej! Jag är Adison, din live-tolk. Klicka på mig när du behöver översättning under ett samtal eller på resa.",
                             es: "¡Hola! Soy Adison, tu intérprete en vivo. Haz clic en mí cuando necesites traducción durante una llamada o viaje.",
                             en: "Hi! I'm Adison, your live interpreter. Click me whenever you need translation during a call or trip." },
-  "agent.maritza.intro":  { sv: "Hej älskling! Jag är Maritza, din snabba stödlärare. Fråga mig om grammatik, ord eller appen — jag svarar direkt.",
-                            es: "¡Hola mi amor! Soy Maritza, tu profesora de apoyo rápida. Pregúntame por gramática, palabras o la app — respondo al instante.",
-                            en: "Hi darling! I'm Maritza, your quick-help teacher. Ask me about grammar, words or the app — I'll answer right away." },
+  "agent.maritza.intro":  { sv: "Hej, jag heter Maritza och är din stödlärare. Ställ frågor om grammatik, ord eller appen så hjälper jag dig vidare — tydligt och i din takt.",
+                            es: "Hola, soy Maritza, tu profesora de apoyo. Pregúntame sobre gramática, vocabulario o la app y te ayudo a avanzar — con claridad y a tu ritmo.",
+                            en: "Hello, I'm Maritza, your support teacher. Ask me about grammar, vocabulary or the app and I'll help you move forward — clearly and at your pace." },
   "agent.gotIt":          { sv: "Tack!",               es: "¡Gracias!",              en: "Got it!" },
 
   // Learn-page hero
