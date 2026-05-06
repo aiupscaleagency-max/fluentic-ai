@@ -25,6 +25,7 @@ import { SentenceBuilder } from "@/components/games/sentence-builder";
 import { DailyChallengeCard } from "@/components/daily-challenge-card";
 import { WordOfTheDay } from "@/components/word-of-the-day";
 import { XpBoostBanner } from "@/components/xp-boost-banner";
+import { GeneratedLessonContent } from "@/components/generated-lesson-content";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Mic, Dices, Trophy } from "lucide-react";
@@ -125,8 +126,9 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
           <h2 id="practice-heading" className="text-lg font-bold text-slate-100">Fri övning</h2>
           <p className="text-xs text-slate-400">Träna enskilda färdigheter när du vill — påverkar inte lärvägen.</p>
         </div>
-      <Tabs defaultValue="flashcards">
+      <Tabs defaultValue="lesson">
         <TabsList>
+          <TabsTrigger value="lesson">Ord & fraser</TabsTrigger>
           <TabsTrigger value="flashcards">Flashcards</TabsTrigger>
           <TabsTrigger value="conversation">Konversation</TabsTrigger>
           <TabsTrigger value="listen">Lyssna & repetera</TabsTrigger>
@@ -138,6 +140,9 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
           <TabsTrigger value="builder">Bygg meningen</TabsTrigger>
           <TabsTrigger value="listenpick">Lyssna & välj</TabsTrigger>
         </TabsList>
+        <TabsContent value="lesson">
+          <GeneratedLessonContent lang={lang} lessonId={activeLesson} />
+        </TabsContent>
         <TabsContent value="flashcards">
           <Flashcards lang={lang} lessonId={activeLesson ?? undefined} />
         </TabsContent>
