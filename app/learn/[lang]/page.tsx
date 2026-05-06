@@ -30,7 +30,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Mic, Dices, Trophy, BookOpen, ArrowDown, Play } from "lucide-react";
 import { LESSONS, getLessonI18n } from "@/lib/lessons";
-import { getActiveLesson } from "@/lib/storage";
+import { getActiveLesson, getLessonActivity } from "@/lib/storage";
 import type { LangCode } from "@/lib/languages";
 import { useT } from "@/lib/i18n";
 import { useUiLang } from "@/lib/ui-language";
@@ -46,6 +46,8 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
   const targetName = langNameI18n(lang, uiLang);
 
   const [activeLesson, setActiveLesson] = React.useState<string | null>(null);
+  // Kontrollerad tab så Fortsätt-CTA kan flytta användaren till rätt övning
+  const [activeTab, setActiveTab] = React.useState<string>("lesson");
   React.useEffect(() => {
     function refresh() {
       setActiveLesson(getActiveLesson(lang as LangCode));
@@ -54,6 +56,24 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
     window.addEventListener("fluentic:active-lesson-changed", refresh);
     return () => window.removeEventListener("fluentic:active-lesson-changed", refresh);
   }, [lang]);
+
+  // Fortsätt-knapp: hoppa till nästa oavklarade aktivitet i lektionen
+  // Ordning: flashcards → cloze → listen → om allt klart visa "Ord & fraser"
+  function continueLesson() {
+    let nextTab = "lesson";
+    if (activeLesson) {
+      const a = getLessonActivity(activeLesson);
+      if (!a.flashcards) nextTab = "flashcards";
+      else if (!a.cloze) nextTab = "cloze";
+      else if (!a.listen) nextTab = "listen";
+    }
+    setActiveTab(nextTab);
+    // Vänta en frame så tab har bytt content innan vi scrollar
+    setTimeout(() => {
+      const el = document.getElementById("tasks-heading");
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
 
   return (
     <motion.div
@@ -110,7 +130,7 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
       <XpBoostBanner />
 
       {/* Hero: din aktiva lektion — direkt-CTA, ingen scroll-fördröjning. */}
-      <ActiveLessonHero lang={lang} activeLessonId={activeLesson} />
+      <ActiveLessonHero lang={lang} activeLessonId={activeLesson} onContinue={continueLesson} />
 
       {/* Uppgifter för aktiv lektion — DIREKT. Tabs scrollar inte bort innehållet. */}
       <section aria-labelledby="tasks-heading" className="space-y-3">
@@ -127,7 +147,7 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
             </Button>
           </Link>
         </div>
-      <Tabs defaultValue="lesson">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="lesson">{t("tab.lesson")}</TabsTrigger>
           <TabsTrigger value="flashcards">{t("tab.flashcards")}</TabsTrigger>
@@ -201,16 +221,18 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
 
 // Hero-card: din aktiva lektion direkt-CTA. Visar lektionsnummer, titel,
 // emoji och en stor "Fortsätt"-knapp som scrollar till uppgifterna.
-function ActiveLessonHero({ lang, activeLessonId }: { lang: LangCode; activeLessonId: string | null }) {
+function ActiveLessonHero({
+  lang,
+  activeLessonId,
+  onContinue,
+}: {
+  lang: LangCode;
+  activeLessonId: string | null;
+  onContinue: () => void;
+}) {
   const t = useT();
   const uiLang = useUiLang();
   const lesson = activeLessonId ? LESSONS.find((l) => l.id === activeLessonId) : null;
-
-  function scrollToTasks() {
-    if (typeof window === "undefined") return;
-    const el = document.getElementById("tasks-heading");
-    el?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
 
   if (!lesson) {
     // Ingen aktiv lektion än — uppmuntra till första lektionen
@@ -219,7 +241,7 @@ function ActiveLessonHero({ lang, activeLessonId }: { lang: LangCode; activeLess
     return (
       <Link
         href={`/learn/${lang}`}
-        onClick={(e) => { e.preventDefault(); scrollToTasks(); }}
+        onClick={(e) => { e.preventDefault(); onContinue(); }}
         className="block"
       >
         <div className="rounded-2xl glass border-violet-300/30 p-5 flex items-center gap-4 hover:bg-white/5 transition-colors">
@@ -246,7 +268,7 @@ function ActiveLessonHero({ lang, activeLessonId }: { lang: LangCode; activeLess
   return (
     <button
       type="button"
-      onClick={scrollToTasks}
+      onClick={onContinue}
       className="w-full text-left rounded-2xl border-2 border-violet-400/50 bg-gradient-to-r from-violet-500/15 via-pink-500/10 to-cyan-500/15 p-5 flex items-center gap-4 hover:from-violet-500/25 hover:via-pink-500/20 hover:to-cyan-500/25 transition-all shadow-lg shadow-violet-500/20"
     >
       <div className="text-5xl shrink-0 lesson-active-pulse rounded-full">{lesson.emoji}</div>

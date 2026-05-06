@@ -4,9 +4,8 @@
 import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { hasOnboarded } from "@/lib/storage";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUserAsync } from "@/lib/auth";
 
-// Skipa onboarding-redirect på publika landings, auth-sidor och själva onboarding
 const SKIP_PATHS = ["/", "/login", "/signup", "/pricing", "/onboarding", "/unlock", "/account"];
 
 export function OnboardingGuard() {
@@ -17,11 +16,18 @@ export function OnboardingGuard() {
     if (!pathname) return;
     if (SKIP_PATHS.includes(pathname)) return;
     if (SKIP_PATHS.some((p) => p !== "/" && pathname.startsWith(p + "/"))) return;
-    // Ej inloggad sköts av AuthGuard — den redirektar till /login
-    if (!getCurrentUser()) return;
-    if (!hasOnboarded()) {
-      router.replace("/onboarding");
-    }
+
+    let cancelled = false;
+    (async () => {
+      const user = await getCurrentUserAsync();
+      if (cancelled) return;
+      if (!user) return; // sköts av AuthGuard
+      if (!hasOnboarded()) {
+        router.replace("/onboarding");
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, [pathname, router]);
 
   return null;
