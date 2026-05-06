@@ -31,6 +31,7 @@ import Link from "next/link";
 import { Mic, Dices, Trophy } from "lucide-react";
 import { getActiveLesson } from "@/lib/storage";
 import type { LangCode } from "@/lib/languages";
+import { useT } from "@/lib/i18n";
 
 export default function LearnPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = use(params);
@@ -38,6 +39,7 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
     notFound();
   }
   const language = getLanguage(lang)!;
+  const t = useT();
 
   const [activeLesson, setActiveLesson] = React.useState<string | null>(null);
   React.useEffect(() => {
@@ -60,7 +62,7 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
         <div className="flex items-center gap-3">
           <div className="text-4xl drop-shadow">{language.flag}</div>
           <div>
-            <h1 className="text-2xl font-bold">Lär dig {language.name.toLowerCase()}</h1>
+            <h1 className="text-2xl font-bold">{t("learn.title")} {language.name.toLowerCase()}</h1>
             <p className="text-sm text-slate-400" dir={language.dir} lang={lang}>
               {language.native}
             </p>
@@ -73,12 +75,12 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
           <PersonaPicker lang={lang} />
           <Link href="/achievements">
             <Button size="sm" variant="outline">
-              <Trophy className="h-4 w-4" /> Achievements
+              <Trophy className="h-4 w-4" /> {t("learn.achievements")}
             </Button>
           </Link>
           <Link href={`/learn/${lang}/call`}>
             <Button size="sm">
-              <Mic className="h-4 w-4" /> Tala med tutor
+              <Mic className="h-4 w-4" /> {t("learn.talk")}
             </Button>
           </Link>
           <div className="flex gap-1 ml-2">
@@ -108,12 +110,12 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
       <section aria-labelledby="path-heading" className="space-y-3">
         <div className="flex items-end justify-between gap-3 flex-wrap">
           <div>
-            <h2 id="path-heading" className="text-lg font-bold text-slate-100">Lektioner — följ din lärväg</h2>
-            <p className="text-xs text-slate-400">Lås upp nästa lektion genom att klara den föregående. Nivåerna går A1 → C1.</p>
+            <h2 id="path-heading" className="text-lg font-bold text-slate-100">{t("learn.lessons.heading")}</h2>
+            <p className="text-xs text-slate-400">{t("learn.lessons.subtitle")}</p>
           </div>
           <Link href={`/learn/${lang}/mix`}>
             <Button size="sm" variant="secondary">
-              <Dices className="h-4 w-4" /> Snabblektion
+              <Dices className="h-4 w-4" /> {t("learn.quicklesson")}
             </Button>
           </Link>
         </div>
@@ -123,22 +125,22 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
       {/* Sekundärt: fri övning utan progression */}
       <section aria-labelledby="practice-heading" className="space-y-3 pt-2">
         <div>
-          <h2 id="practice-heading" className="text-lg font-bold text-slate-100">Fri övning</h2>
-          <p className="text-xs text-slate-400">Träna enskilda färdigheter när du vill — påverkar inte lärvägen.</p>
+          <h2 id="practice-heading" className="text-lg font-bold text-slate-100">{t("learn.practice.heading")}</h2>
+          <p className="text-xs text-slate-400">{t("learn.practice.subtitle")}</p>
         </div>
       <Tabs defaultValue="lesson">
         <TabsList>
-          <TabsTrigger value="lesson">Ord & fraser</TabsTrigger>
-          <TabsTrigger value="flashcards">Flashcards</TabsTrigger>
-          <TabsTrigger value="conversation">Konversation</TabsTrigger>
-          <TabsTrigger value="listen">Lyssna & repetera</TabsTrigger>
-          <TabsTrigger value="pron">Uttalsövning</TabsTrigger>
-          <TabsTrigger value="scenarios">Scenarier</TabsTrigger>
-          <TabsTrigger value="match">Match</TabsTrigger>
-          <TabsTrigger value="cloze">Lucka</TabsTrigger>
-          <TabsTrigger value="scramble">Ordpussel</TabsTrigger>
-          <TabsTrigger value="builder">Bygg meningen</TabsTrigger>
-          <TabsTrigger value="listenpick">Lyssna & välj</TabsTrigger>
+          <TabsTrigger value="lesson">{t("tab.lesson")}</TabsTrigger>
+          <TabsTrigger value="flashcards">{t("tab.flashcards")}</TabsTrigger>
+          <TabsTrigger value="conversation">{t("tab.conversation")}</TabsTrigger>
+          <TabsTrigger value="listen">{t("tab.listen")}</TabsTrigger>
+          <TabsTrigger value="pron">{t("tab.pron")}</TabsTrigger>
+          <TabsTrigger value="scenarios">{t("tab.scenarios")}</TabsTrigger>
+          <TabsTrigger value="match">{t("tab.match")}</TabsTrigger>
+          <TabsTrigger value="cloze">{t("tab.cloze")}</TabsTrigger>
+          <TabsTrigger value="scramble">{t("tab.scramble")}</TabsTrigger>
+          <TabsTrigger value="builder">{t("tab.builder")}</TabsTrigger>
+          <TabsTrigger value="listenpick">{t("tab.listenpick")}</TabsTrigger>
         </TabsList>
         <TabsContent value="lesson">
           <GeneratedLessonContent lang={lang} lessonId={activeLesson} />

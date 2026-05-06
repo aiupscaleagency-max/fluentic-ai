@@ -341,7 +341,7 @@ export function VoiceCall({ lang, systemOverride, greeting, onEnd, endLabel = "A
             {tail.map((m, i) => (
               <div key={i} className={m.role === "user" ? "text-slate-900 dark:text-slate-100" : "text-indigo-700 dark:text-indigo-300"}>
                 <span className="text-xs uppercase opacity-60 mr-2">
-                  {m.role === "user" ? "Du" : "Tutor"}:
+                  {m.role === "user" ? "Du" : "Hector"}:
                 </span>
                 <span dir={language.dir} lang={lang}>
                   {m.content}

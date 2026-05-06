@@ -4,24 +4,29 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
-import { Sparkles, Languages, Calendar, Home, Flame, Heart, Settings } from "lucide-react";
+import { Sparkles, Languages, Calendar, Home, Flame, Heart, Settings, Globe } from "lucide-react";
 import { getProgress, getHearts } from "@/lib/storage";
 import { SettingsDrawer } from "./settings-drawer";
 import { NotificationFeed } from "./notification-feed";
+import { useT } from "@/lib/i18n";
+import { useUiLang, setUiLang, UI_LANGS, type UiLang } from "@/lib/ui-language";
 
-const items = [
-  { href: "/", label: "Hem", icon: Home },
-  { href: "/translate", label: "Tolk", icon: Languages },
-  { href: "/schedule", label: "Schema", icon: Calendar },
+const navItems: { href: string; key: string; icon: typeof Home }[] = [
+  { href: "/",          key: "nav.home",      icon: Home },
+  { href: "/translate", key: "nav.translate", icon: Languages },
+  { href: "/schedule",  key: "nav.schedule",  icon: Calendar },
 ];
 
 export function Nav() {
   const pathname = usePathname();
+  const t = useT();
+  const uiLang = useUiLang();
   const [xp, setXp] = React.useState(0);
   const [streak, setStreak] = React.useState(0);
   const [hearts, setHearts] = React.useState(5);
   const [scrolled, setScrolled] = React.useState(false);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [langMenuOpen, setLangMenuOpen] = React.useState(false);
 
   React.useEffect(() => {
     function refresh() {
@@ -81,7 +86,7 @@ export function Nav() {
           </div>
 
           <nav className="flex items-center gap-1">
-            {items.map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon;
               const active = pathname === item.href;
               return (
@@ -89,23 +94,61 @@ export function Nav() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200",
+                    // Bold italic vit text — Mike vill ha tydliga, framträdande nav-länkar
+                    "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-extrabold italic tracking-tight transition-all duration-200",
                     active
                       ? "bg-gradient-to-r from-violet-500/30 to-cyan-500/30 text-white shadow-inner"
-                      : "text-slate-300 hover:bg-white/10 hover:text-white",
+                      : "text-white hover:bg-white/10",
                   )}
                 >
                   <Icon className="h-4 w-4" />
-                  <span className="hidden sm:inline">{item.label}</span>
+                  <span className="hidden sm:inline">{t(item.key)}</span>
                 </Link>
               );
             })}
-            {/* Aviseringsklocka med badge — drawer hanteras inuti komponenten */}
+
+            {/* Globalt UI-språk: sv / es / en — global picker */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setLangMenuOpen((o) => !o)}
+                className="flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-bold italic text-white hover:bg-white/10"
+                aria-label={t("uilang.label")}
+              >
+                <Globe className="h-4 w-4" />
+                <span className="hidden sm:inline uppercase">{uiLang}</span>
+              </button>
+              {langMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setLangMenuOpen(false)} />
+                  <div className="absolute right-0 z-40 mt-1 w-44 rounded-xl glass-strong border border-white/15 p-1 shadow-xl">
+                    <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-slate-400">{t("uilang.label")}</div>
+                    {UI_LANGS.map((l) => (
+                      <button
+                        key={l.code}
+                        type="button"
+                        onClick={() => { setUiLang(l.code as UiLang); setLangMenuOpen(false); }}
+                        className={cn(
+                          "w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-sm",
+                          uiLang === l.code
+                            ? "bg-violet-500/25 text-white"
+                            : "text-slate-200 hover:bg-white/10"
+                        )}
+                      >
+                        <span className="text-base">{l.flag}</span>
+                        <span className="font-medium">{l.native}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
             <NotificationFeed />
             <button
               onClick={() => setSettingsOpen(true)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-300 hover:bg-white/10 hover:text-white"
-              aria-label="Inställningar"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-white hover:bg-white/10"
+              aria-label={t("nav.settings")}
             >
               <Settings className="h-4 w-4" />
             </button>

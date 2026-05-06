@@ -14,6 +14,7 @@ import { PersonaPicker } from "@/components/persona-picker";
 import { usePersona } from "@/lib/personas";
 import * as React from "react";
 import { SCENARIOS } from "@/lib/scenarios";
+import { useT } from "@/lib/i18n";
 
 const FALLBACK_GREETINGS: Record<string, string> = {
   es: "¡Hola! ¿De qué te gustaría hablar hoy?",
@@ -28,6 +29,7 @@ export default function CallPage({ params }: { params: Promise<{ lang: string }>
   if (!isValidLangCode(lang)) notFound();
   const language = getLanguage(lang)!;
   const [mode, setMode] = React.useState<"free" | "scenario">("free");
+  const t = useT();
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const persona = usePersona(lang as import("@/lib/languages").LangCode);
   const greeting = persona?.greetings[lang as import("@/lib/languages").LangCode] ?? FALLBACK_GREETINGS[lang];
@@ -41,7 +43,7 @@ export default function CallPage({ params }: { params: Promise<{ lang: string }>
     >
       <div className="flex items-center justify-between gap-3">
         <Link href={`/learn/${lang}`} className="inline-flex items-center text-sm text-slate-300 hover:text-cyan-300">
-          <ArrowLeft className="h-4 w-4 mr-1" /> Tillbaka
+          <ArrowLeft className="h-4 w-4 mr-1" /> {t("common.back")}
         </Link>
         <div className="flex items-center gap-2">
           <PersonaPicker lang={lang as import("@/lib/languages").LangCode} />
@@ -51,9 +53,9 @@ export default function CallPage({ params }: { params: Promise<{ lang: string }>
 
       <div className="text-center space-y-1">
         <h1 className="text-2xl font-bold flex items-center justify-center gap-2">
-          {language.flag} Tala med tutor
+          {language.flag} {t("call.title")}
         </h1>
-        <p className="text-sm text-slate-400">Tryck på mikrofonen och börja prata på {language.name.toLowerCase()}.</p>
+        <p className="text-sm text-slate-400">{t("call.subtitle")} ({language.name.toLowerCase()})</p>
       </div>
 
       <div className="flex justify-center gap-2">
@@ -62,14 +64,14 @@ export default function CallPage({ params }: { params: Promise<{ lang: string }>
           size="sm"
           onClick={() => setMode("free")}
         >
-          <MessageCircle className="h-4 w-4" /> Fri chatt
+          <MessageCircle className="h-4 w-4" /> {t("call.free")}
         </Button>
         <Button
           variant={mode === "scenario" ? "default" : "outline"}
           size="sm"
           onClick={() => setMode("scenario")}
         >
-          <Drama className="h-4 w-4" /> Scenario
+          <Drama className="h-4 w-4" /> {t("call.scenario")}
         </Button>
       </div>
 

@@ -105,9 +105,9 @@ export function Conversation({ lang }: { lang: LangCode }) {
             <div className="text-center text-slate-500 py-12">
               {persona
                 ? <>Säg hej till <span className="font-semibold text-slate-200">{persona.emoji} {persona.name}</span> på {language.name.toLowerCase()}!</>
-                : <>Säg hej till din AI-tutor på {language.name.toLowerCase()}!</>}
+                : <>Säg hej till Hector på {language.name.toLowerCase()}!</>}
               <div className="mt-2 text-xs">
-                Tutorn svarar på {language.name.toLowerCase()} med översättning under.
+                Hector svarar på {language.name.toLowerCase()} med översättning under.
               </div>
             </div>
           )}
@@ -147,7 +147,7 @@ export function Conversation({ lang }: { lang: LangCode }) {
           ))}
           {loading && (
             <div className="flex items-center gap-2 text-sm text-slate-500">
-              <Loader2 className="h-4 w-4 animate-spin" /> Tutorn tänker…
+              <Loader2 className="h-4 w-4 animate-spin" /> Hector tänker…
             </div>
           )}
           {error && (
