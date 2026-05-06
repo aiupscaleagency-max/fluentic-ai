@@ -14,7 +14,7 @@
 3. Klicka **Run**
 
 Detta skapar:
-- `profiles`-tabell (id, email, name, tier, avatar_url, created_at, updated_at)
+- `fluentic_profiles`-tabell (id, email, name, tier, avatar_url, created_at, updated_at)
 - Row Level Security-policies (varje user ser/uppdaterar bara sin egen rad)
 - Trigger som auto-skapar profil vid signup
 
@@ -39,7 +39,7 @@ Supabase Dashboard → **Authentication** → **Providers** → **Email**
 1. `npm run dev`
 2. `/signup` — skapa ett konto
 3. Verifiera i Supabase Dashboard → **Authentication** → **Users** att raden finns
-4. Verifiera i **Database** → **Tables** → `profiles` att profil-raden auto-skapats
+4. Verifiera i **Database** → **Tables** → `fluentic_profiles` att profil-raden auto-skapats
 
 ## Hur fungerar det?
 

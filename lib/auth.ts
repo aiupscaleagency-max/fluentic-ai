@@ -4,7 +4,7 @@
 //
 // PRIMARY: Supabase Auth (email + password) när NEXT_PUBLIC_SUPABASE_URL och
 // NEXT_PUBLIC_SUPABASE_ANON_KEY är satta. Profil + tier hämtas från
-// "profiles"-tabellen (se lib/supabase-schema.sql).
+// "fluentic_profiles"-tabellen (se lib/supabase-schema.sql).
 //
 // FALLBACK: localStorage-baserad mock så lokal dev fungerar utan Supabase.
 // Samma User-typ + samma hooks så komponenter inte ser skillnad.
@@ -89,7 +89,7 @@ export async function signup(email: string, password: string, name: string): Pro
       createdAt: Date.now(),
       tier: "free",
     };
-    await supabase.from("profiles").upsert({
+    await supabase.from("fluentic_profiles").upsert({
       id: profile.id,
       email: profile.email,
       name: profile.name,
@@ -135,7 +135,7 @@ export async function login(email: string, password: string): Promise<AuthResult
 
     // Hämta profil
     const { data: profile } = await supabase
-      .from("profiles")
+      .from("fluentic_profiles")
       .select("*")
       .eq("id", data.user.id)
       .single();
@@ -182,7 +182,7 @@ export async function getCurrentUserAsync(): Promise<User | null> {
     const { data } = await supabase.auth.getUser();
     if (!data.user) return null;
     const { data: profile } = await supabase
-      .from("profiles")
+      .from("fluentic_profiles")
       .select("*")
       .eq("id", data.user.id)
       .single();
@@ -226,7 +226,7 @@ export async function updateUserTier(tier: User["tier"]): Promise<User | null> {
   if (supabase) {
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) return null;
-    await supabase.from("profiles").update({ tier }).eq("id", auth.user.id);
+    await supabase.from("fluentic_profiles").update({ tier }).eq("id", auth.user.id);
     emit();
     return getCurrentUserAsync();
   }
