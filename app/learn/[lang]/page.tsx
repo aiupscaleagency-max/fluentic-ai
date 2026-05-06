@@ -28,7 +28,8 @@ import { XpBoostBanner } from "@/components/xp-boost-banner";
 import { GeneratedLessonContent } from "@/components/generated-lesson-content";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Mic, Dices, Trophy } from "lucide-react";
+import { Mic, Dices, Trophy, BookOpen, ArrowDown, Play } from "lucide-react";
+import { LESSONS } from "@/lib/lessons";
 import { getActiveLesson } from "@/lib/storage";
 import type { LangCode } from "@/lib/languages";
 import { useT } from "@/lib/i18n";
@@ -103,33 +104,24 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
 
       <ProgressBar />
 
-      <XpBoostBanner />
+      {/* Hero: din aktiva lektion — direkt-CTA, ingen scroll-fördröjning. Detta är
+          det första användaren ser efter headern eftersom appen handlar om lektioner. */}
+      <ActiveLessonHero lang={lang} activeLessonId={activeLesson} />
 
-      {/* Dagliga hookar — Daily Challenge + Word of the day */}
-      <DailyChallengeCard lang={lang} />
-      <WordOfTheDay lang={lang} />
-
-      {/* Primärt fokus: lärvägen — användaren ska se direkt att lektioner finns nedan */}
-      <section aria-labelledby="path-heading" className="space-y-3">
+      {/* Uppgifter för aktiv lektion — DIREKT. Tabs scrollar inte bort innehållet. */}
+      <section aria-labelledby="tasks-heading" className="space-y-3">
         <div className="flex items-end justify-between gap-3 flex-wrap">
           <div>
-            <h2 id="path-heading" className="text-lg font-bold text-slate-100">{t("learn.lessons.heading")}</h2>
-            <p className="text-xs text-slate-400">{t("learn.lessons.subtitle")}</p>
+            <h2 id="tasks-heading" className="text-2xl font-extrabold text-slate-100 flex items-center gap-2">
+              <BookOpen className="h-6 w-6 text-violet-300" /> {t("learn.lessonsHeader")}
+            </h2>
+            <p className="text-xs text-slate-300">{t("learn.practice.subtitle")}</p>
           </div>
           <Link href={`/learn/${lang}/mix`}>
             <Button size="sm" variant="secondary">
               <Dices className="h-4 w-4" /> {t("learn.quicklesson")}
             </Button>
           </Link>
-        </div>
-        <LessonPath lang={lang} />
-      </section>
-
-      {/* Sekundärt: fri övning utan progression */}
-      <section aria-labelledby="practice-heading" className="space-y-3 pt-2">
-        <div>
-          <h2 id="practice-heading" className="text-lg font-bold text-slate-100">{t("learn.practice.heading")}</h2>
-          <p className="text-xs text-slate-400">{t("learn.practice.subtitle")}</p>
         </div>
       <Tabs defaultValue="lesson">
         <TabsList>
@@ -180,6 +172,90 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
         </TabsContent>
       </Tabs>
       </section>
+
+      {/* Lektionskedjan — TYDLIG "Lektioner"-h2-rubrik så användaren ser att alla
+          lektioner finns nedanför. Tidigare hade vi en svag "Lektioner — följ
+          din lärväg" som lätt missades. */}
+      <section aria-labelledby="path-heading" className="space-y-3 pt-4">
+        <div className="flex items-center gap-2 border-t border-white/10 pt-5">
+          <div className="h-1 w-8 rounded-full bg-gradient-to-r from-violet-400 to-cyan-400" />
+          <h2 id="path-heading" className="text-2xl font-extrabold text-slate-100">
+            {t("learn.lessonsHeader")} — {t("path.title")}
+          </h2>
+        </div>
+        <p className="text-xs text-slate-300">{t("learn.lessons.subtitle")}</p>
+        <LessonPath lang={lang} />
+      </section>
+
+      {/* Dagliga hookar längst ner — sekundärt fokus, inte i vägen */}
+      <section className="space-y-3 pt-4">
+        <XpBoostBanner />
+        <DailyChallengeCard lang={lang} />
+        <WordOfTheDay lang={lang} />
+      </section>
     </motion.div>
+  );
+}
+
+// Hero-card: din aktiva lektion direkt-CTA. Visar lektionsnummer, titel,
+// emoji och en stor "Fortsätt"-knapp som scrollar till uppgifterna.
+function ActiveLessonHero({ lang, activeLessonId }: { lang: LangCode; activeLessonId: string | null }) {
+  const t = useT();
+  const lesson = activeLessonId ? LESSONS.find((l) => l.id === activeLessonId) : null;
+
+  function scrollToTasks() {
+    if (typeof window === "undefined") return;
+    const el = document.getElementById("tasks-heading");
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  if (!lesson) {
+    // Ingen aktiv lektion än — uppmuntra till första lektionen
+    const first = LESSONS[0];
+    return (
+      <Link
+        href={`/learn/${lang}`}
+        onClick={(e) => { e.preventDefault(); scrollToTasks(); }}
+        className="block"
+      >
+        <div className="rounded-2xl glass border-violet-300/30 p-5 flex items-center gap-4 hover:bg-white/5 transition-colors">
+          <div className="text-5xl">{first.emoji}</div>
+          <div className="flex-1 min-w-0">
+            <div className="text-xs uppercase tracking-wider text-violet-200 font-extrabold">
+              {t("learn.startFirst")}
+            </div>
+            <div className="font-bold text-lg text-slate-100 truncate">
+              {first.number}. {first.title}
+            </div>
+            <div className="text-xs text-slate-300 mt-0.5">{first.goalSv}</div>
+          </div>
+          <Button size="lg">
+            <Play className="h-4 w-4" /> {t("common.start")}
+          </Button>
+        </div>
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={scrollToTasks}
+      className="w-full text-left rounded-2xl border-2 border-violet-400/50 bg-gradient-to-r from-violet-500/15 via-pink-500/10 to-cyan-500/15 p-5 flex items-center gap-4 hover:from-violet-500/25 hover:via-pink-500/20 hover:to-cyan-500/25 transition-all shadow-lg shadow-violet-500/20"
+    >
+      <div className="text-5xl shrink-0 lesson-active-pulse rounded-full">{lesson.emoji}</div>
+      <div className="flex-1 min-w-0">
+        <div className="text-xs uppercase tracking-wider text-violet-200 font-extrabold">
+          {t("learn.continue")}
+        </div>
+        <div className="font-bold text-lg text-slate-100 truncate">
+          {lesson.number}. {lesson.title}
+        </div>
+        <div className="text-xs text-slate-300 mt-0.5 truncate">{lesson.goalSv}</div>
+      </div>
+      <div className="shrink-0 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-violet-500/40">
+        <ArrowDown className="h-4 w-4" /> {t("common.continue")}
+      </div>
+    </button>
   );
 }

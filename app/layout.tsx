@@ -5,6 +5,7 @@ import { OnboardingGuard } from "@/components/onboarding-guard";
 import { NotificationsRegister } from "@/components/notifications-register";
 import { AchievementWatcher } from "@/components/achievement-watcher";
 import { MaritzaChat } from "@/components/maritza-chat";
+import { InterpreterFab } from "@/components/interpreter-fab";
 
 export const metadata: Metadata = {
   title: "Fluentic AI — Lär dig språk på det roliga sättet",
@@ -25,6 +26,7 @@ export default function RootLayout({
         <AchievementWatcher />
         <Nav />
         <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+        <InterpreterFab />
         <MaritzaChat />
       </body>
     </html>

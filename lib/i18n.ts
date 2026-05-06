@@ -182,6 +182,17 @@ export const STRINGS: Dict = {
                             en: "8 turns rotating between flashcards, cloze, match, translate and listen." },
   "mix.activeLesson":     { sv: "Aktiv lektion:",     es: "Lección activa:",        en: "Active lesson:" },
   "mix.countsTowards":    { sv: "räknas mot din lärväg.", es: "cuenta para tu ruta.", en: "counts toward your path." },
+
+  // Tolk-FAB
+  "interp.title":         { sv: "Tolk",                es: "Intérprete",             en: "Interpreter" },
+  "interp.subtitle":      { sv: "Live-översättning under samtal", es: "Traducción en vivo en llamadas", en: "Live translation during calls" },
+  "interp.openFull":      { sv: "Öppna full tolk",     es: "Abrir intérprete",       en: "Open full interpreter" },
+  "interp.always":        { sv: "Alltid tillgänglig",  es: "Siempre disponible",     en: "Always available" },
+
+  // Learn-page hero
+  "learn.continue":       { sv: "Fortsätt din lektion",es: "Continúa tu lección",    en: "Continue your lesson" },
+  "learn.startFirst":     { sv: "Starta din första lektion", es: "Empieza tu primera lección", en: "Start your first lesson" },
+  "learn.lessonsHeader":  { sv: "Lektioner",           es: "Lecciones",              en: "Lessons" },
 };
 
 export function t(key: string, lang: UiLang): string {
