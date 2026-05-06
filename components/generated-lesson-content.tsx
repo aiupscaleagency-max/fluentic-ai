@@ -8,9 +8,10 @@ import { Badge } from "./ui/badge";
 import { Volume2, Loader2, Sparkles, BookOpen, MessageSquare } from "lucide-react";
 import type { LangCode } from "@/lib/languages";
 import { getLanguage } from "@/lib/languages";
-import { LESSONS } from "@/lib/lessons";
+import { LESSONS, getLessonI18n } from "@/lib/lessons";
 import { useGeneratedLessonContent } from "@/lib/lesson-content";
 import { useT } from "@/lib/i18n";
+import { useUiLang } from "@/lib/ui-language";
 
 // Visar lektions-specifikt vocab + phrases. Auto-genereras via Gemini om
 // vi inte redan har handgjord data. Cachas på server (tmpdir) + klient (localStorage).
@@ -23,7 +24,9 @@ export function GeneratedLessonContent({
 }) {
   const language = getLanguage(lang)!;
   const t = useT();
+  const uiLang = useUiLang();
   const lesson = lessonId ? LESSONS.find((l) => l.id === lessonId) : null;
+  const lessonI18n = lesson ? getLessonI18n(lesson, uiLang) : null;
   const { content, loading, error } = useGeneratedLessonContent(lessonId, lang);
 
   function speak(text: string) {
@@ -49,7 +52,7 @@ export function GeneratedLessonContent({
       <Card>
         <CardContent className="p-6 text-center text-sm text-slate-300 flex flex-col items-center gap-3">
           <Loader2 className="h-6 w-6 animate-spin text-violet-400" />
-          {t("gen.preparing")} {lesson.title}…
+          {t("gen.preparing")} {getLessonI18n(lesson, uiLang).title}…
         </CardContent>
       </Card>
     );
@@ -86,10 +89,10 @@ export function GeneratedLessonContent({
           <span className="text-2xl">{lesson.emoji}</span>
           <div>
             <div className="font-semibold flex items-center gap-2">
-              {lesson.number}. {lesson.title}
+              {lesson.number}. {lessonI18n!.title}
               <Badge variant="outline">{lesson.level}</Badge>
             </div>
-            <div className="text-xs text-slate-300">{lesson.goalSv}</div>
+            <div className="text-xs text-slate-300">{lessonI18n!.goal}</div>
           </div>
         </div>
         <Badge variant="secondary" className="gap-1">

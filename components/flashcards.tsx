@@ -12,6 +12,7 @@ import { addXP, getSrsState, updateSrsCard, markActivityDone } from "@/lib/stora
 import { Volume2, RotateCcw } from "lucide-react";
 import { useLevel } from "@/lib/use-level";
 import { useTracks } from "@/lib/track";
+import { useWordImage } from "@/lib/word-image";
 
 export function Flashcards({ lang, lessonId }: { lang: LangCode; lessonId?: string }) {
   const language = getLanguage(lang)!;
@@ -37,6 +38,8 @@ export function Flashcards({ lang, lessonId }: { lang: LangCode; lessonId?: stri
 
   const current = queue[idx];
   const progress = queue.length > 0 ? ((idx) / queue.length) * 100 : 0;
+  // Bild-stöd för visuell association — engelskt ord ger bäst Pexels-träffar
+  const { image } = useWordImage(current ? (lang === "en" ? current.word : current.sv) : null);
 
   function next(knewIt: boolean) {
     if (!current) return;
@@ -125,27 +128,38 @@ export function Flashcards({ lang, lessonId }: { lang: LangCode; lessonId?: stri
           </Card>
           <Card className="flip-card-back w-full h-full">
             <CardContent className="flex h-full w-full items-center justify-center text-center p-6">
-              <div className="space-y-4">
-                <div className="text-sm uppercase tracking-wider text-slate-400">
-                  {language.name}
+              <div className="flex items-center gap-4 w-full justify-center">
+                {/* Bild-stöd för visuellt minne — Pexels-illustration om vi har den */}
+                {image?.url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={image.url}
+                    alt={image.alt ?? current.sv}
+                    className="h-32 w-32 rounded-xl object-cover shadow-lg shadow-black/30 hidden sm:block"
+                  />
+                )}
+                <div className="space-y-3">
+                  <div className="text-sm uppercase tracking-wider text-slate-400">
+                    {language.name}
+                  </div>
+                  <div
+                    className="text-3xl font-bold"
+                    dir={language.dir}
+                    lang={lang}
+                  >
+                    {current.word}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      speak();
+                    }}
+                  >
+                    <Volume2 className="h-4 w-4" /> Lyssna
+                  </Button>
                 </div>
-                <div
-                  className="text-3xl font-bold"
-                  dir={language.dir}
-                  lang={lang}
-                >
-                  {current.word}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    speak();
-                  }}
-                >
-                  <Volume2 className="h-4 w-4" /> Lyssna
-                </Button>
               </div>
             </CardContent>
           </Card>

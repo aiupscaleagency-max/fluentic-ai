@@ -33,6 +33,11 @@ export function Translator() {
   const [error, setError] = React.useState<string | null>(null);
   const [conversationMode, setConversationMode] = React.useState(false);
   const [turn, setTurn] = React.useState<"a" | "b">("a"); // för konversations-tolk
+  // Auto-fortsätt: efter översättningen är uttalad börjar mic på motparten direkt.
+  // Kritiskt för "live-call-feeling" när Mike ringer släkt utan att hela tiden klicka.
+  const [autoContinue, setAutoContinue] = React.useState(true);
+  // Pending-flagga för att schemalägga nästa mic-start efter TTS slutar
+  const pendingContinueRef = React.useRef(false);
   const [history, setHistory] = React.useState<{ from: string; to: string; text: string; out: string }[]>([]);
   const recRef = React.useRef<SRInstance | null>(null);
 
@@ -115,10 +120,17 @@ export function Translator() {
     }
   }
 
-  function speak(text: string, langBcp47: string) {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  function speak(text: string, langBcp47: string, onEnd?: () => void) {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      onEnd?.();
+      return;
+    }
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = langBcp47;
+    if (onEnd) {
+      utter.onend = onEnd;
+      utter.onerror = onEnd;
+    }
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utter);
   }
@@ -153,7 +165,16 @@ export function Translator() {
       setListening(false);
       const result = await translate(said, speakerLang, targetLang);
       if (result?.translation) {
-        speak(result.translation, targetBcp);
+        // Spela upp översättningen → när TTS är klar och autoContinue är på,
+        // starta nästa runda automatiskt så samtalet flyter
+        speak(result.translation, targetBcp, () => {
+          if (pendingContinueRef.current) {
+            pendingContinueRef.current = false;
+            // Liten paus så TTS hinner stänga sin audio-kanal innan SR öppnar
+            setTimeout(() => speakAndTranslateConversation(), 250);
+          }
+        });
+        if (autoContinue) pendingContinueRef.current = true;
         setHistory((h) => [
           ...h,
           { from: speakerLang, to: targetLang, text: said, out: result.translation! },
@@ -277,8 +298,38 @@ export function Translator() {
       {conversationMode && (
         <Card>
           <CardContent className="p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <Badge>{turn === "a" ? `${fromMeta.flag} ${fromMeta.name}s tur` : `${toMeta.flag} ${toMeta.name}s tur`}</Badge>
+            {/* Stora språk-rutor som tydligt visar vem som pratar nu — split-screen-känsla */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className={`rounded-2xl border-2 p-4 text-center transition-all ${
+                turn === "a"
+                  ? "border-violet-400 bg-violet-500/15 shadow-lg shadow-violet-500/30 lesson-active-pulse"
+                  : "border-white/10 bg-white/5 opacity-60"
+              }`}>
+                <div className="text-4xl mb-1">{fromMeta.flag}</div>
+                <div className="text-sm font-bold">{fromMeta.name}</div>
+                {turn === "a" && listening && <div className="text-xs text-violet-200 mt-1 animate-pulse">🎙 Lyssnar…</div>}
+              </div>
+              <div className={`rounded-2xl border-2 p-4 text-center transition-all ${
+                turn === "b"
+                  ? "border-cyan-400 bg-cyan-500/15 shadow-lg shadow-cyan-500/30 lesson-active-pulse"
+                  : "border-white/10 bg-white/5 opacity-60"
+              }`}>
+                <div className="text-4xl mb-1">{toMeta.flag}</div>
+                <div className="text-sm font-bold">{toMeta.name}</div>
+                {turn === "b" && listening && <div className="text-xs text-cyan-200 mt-1 animate-pulse">🎙 Lyssnar…</div>}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <label className="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={autoContinue}
+                  onChange={(e) => setAutoContinue(e.target.checked)}
+                  className="rounded border-white/20"
+                />
+                Auto-fortsätt (handsfree)
+              </label>
               <Button onClick={speakAndTranslateConversation} disabled={listening || loading}>
                 {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                 {listening ? "Lyssnar…" : "Spela in"}

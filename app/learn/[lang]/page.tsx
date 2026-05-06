@@ -29,7 +29,7 @@ import { GeneratedLessonContent } from "@/components/generated-lesson-content";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Mic, Dices, Trophy, BookOpen, ArrowDown, Play } from "lucide-react";
-import { LESSONS } from "@/lib/lessons";
+import { LESSONS, getLessonI18n } from "@/lib/lessons";
 import { getActiveLesson } from "@/lib/storage";
 import type { LangCode } from "@/lib/languages";
 import { useT } from "@/lib/i18n";
@@ -104,8 +104,12 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
 
       <ProgressBar />
 
-      {/* Hero: din aktiva lektion — direkt-CTA, ingen scroll-fördröjning. Detta är
-          det första användaren ser efter headern eftersom appen handlar om lektioner. */}
+      {/* "Dagens samtal" är OK i toppen men kompakt — bara 1 rad så lektionerna
+          kommer ändå tydligt nedanför. */}
+      <DailyChallengeCard lang={lang} />
+      <XpBoostBanner />
+
+      {/* Hero: din aktiva lektion — direkt-CTA, ingen scroll-fördröjning. */}
       <ActiveLessonHero lang={lang} activeLessonId={activeLesson} />
 
       {/* Uppgifter för aktiv lektion — DIREKT. Tabs scrollar inte bort innehållet. */}
@@ -187,10 +191,8 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
         <LessonPath lang={lang} />
       </section>
 
-      {/* Dagliga hookar längst ner — sekundärt fokus, inte i vägen */}
+      {/* Word of the Day längst ner — bonus-snack, inte i vägen */}
       <section className="space-y-3 pt-4">
-        <XpBoostBanner />
-        <DailyChallengeCard lang={lang} />
         <WordOfTheDay lang={lang} />
       </section>
     </motion.div>
@@ -201,6 +203,7 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
 // emoji och en stor "Fortsätt"-knapp som scrollar till uppgifterna.
 function ActiveLessonHero({ lang, activeLessonId }: { lang: LangCode; activeLessonId: string | null }) {
   const t = useT();
+  const uiLang = useUiLang();
   const lesson = activeLessonId ? LESSONS.find((l) => l.id === activeLessonId) : null;
 
   function scrollToTasks() {
@@ -212,6 +215,7 @@ function ActiveLessonHero({ lang, activeLessonId }: { lang: LangCode; activeLess
   if (!lesson) {
     // Ingen aktiv lektion än — uppmuntra till första lektionen
     const first = LESSONS[0];
+    const firstI18n = getLessonI18n(first, uiLang);
     return (
       <Link
         href={`/learn/${lang}`}
@@ -225,9 +229,9 @@ function ActiveLessonHero({ lang, activeLessonId }: { lang: LangCode; activeLess
               {t("learn.startFirst")}
             </div>
             <div className="font-bold text-lg text-slate-100 truncate">
-              {first.number}. {first.title}
+              {first.number}. {firstI18n.title}
             </div>
-            <div className="text-xs text-slate-300 mt-0.5">{first.goalSv}</div>
+            <div className="text-xs text-slate-300 mt-0.5">{firstI18n.goal}</div>
           </div>
           <Button size="lg">
             <Play className="h-4 w-4" /> {t("common.start")}
@@ -236,6 +240,8 @@ function ActiveLessonHero({ lang, activeLessonId }: { lang: LangCode; activeLess
       </Link>
     );
   }
+
+  const i18n = getLessonI18n(lesson, uiLang);
 
   return (
     <button
@@ -249,9 +255,9 @@ function ActiveLessonHero({ lang, activeLessonId }: { lang: LangCode; activeLess
           {t("learn.continue")}
         </div>
         <div className="font-bold text-lg text-slate-100 truncate">
-          {lesson.number}. {lesson.title}
+          {lesson.number}. {i18n.title}
         </div>
-        <div className="text-xs text-slate-300 mt-0.5 truncate">{lesson.goalSv}</div>
+        <div className="text-xs text-slate-300 mt-0.5 truncate">{i18n.goal}</div>
       </div>
       <div className="shrink-0 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-violet-500/40">
         <ArrowDown className="h-4 w-4" /> {t("common.continue")}

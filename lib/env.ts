@@ -7,3 +7,19 @@ export function getGoogleApiKey(): string | undefined {
     process.env.GEMINI_API_KEY
   );
 }
+
+// Telegram-bot-token från BotFather. Sätt i Vercel/.env.local.
+export function getTelegramBotToken(): string | undefined {
+  return process.env.TELEGRAM_BOT_TOKEN;
+}
+
+// Hemlig token som skickas i webhook-URL för att verifiera att inkommande
+// requests verkligen kommer från Telegram. Sätt en lång slumpsträng.
+export function getTelegramWebhookSecret(): string | undefined {
+  return process.env.TELEGRAM_WEBHOOK_SECRET;
+}
+
+// Pexels API-nyckel för bild-stöd per ord. Gratis-tier räcker för MVP.
+export function getPexelsApiKey(): string | undefined {
+  return process.env.PEXELS_API_KEY;
+}

@@ -78,47 +78,46 @@ export function DailyChallengeCard({ lang }: { lang: LangCode }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
+      {/* Kompakt en-rads-card — tar mindre yta i toppen så lektionerna kommer närmare */}
       <Card variant="gradient" className="overflow-hidden border-amber-300/30">
-        <CardContent className="p-5">
-          <div className="flex items-start gap-4 flex-wrap">
-            <div className="text-5xl shrink-0">{challenge.emoji}</div>
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="text-3xl shrink-0">{challenge.emoji}</div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                {/* Höjd kontrast — text-amber-200 istället för 300 så den syns tydligare */}
-                <span className="text-xs uppercase tracking-wider text-amber-200 font-extrabold">{t("daily.title")}</span>
-                <Badge variant="warning" className="gap-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] uppercase tracking-wider text-amber-200 font-extrabold">{t("daily.title")}</span>
+                <Badge variant="warning" className="gap-1 text-[10px] px-1.5 py-0">
                   <Trophy className="h-3 w-3" /> +{challenge.bonusXp} XP
                 </Badge>
-              </div>
-              <h3 className="text-lg font-bold">{t(`daily.kind.${challenge.kind}`)}</h3>
-              <p className="text-sm text-slate-200 mt-0.5">{t(`daily.desc.${challenge.kind}`)}</p>
-
-              <div className="mt-3 flex items-center gap-2 flex-wrap">
-                {claimed ? (
-                  <Badge variant="success" className="gap-1">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> {t("daily.claimed")}
+                {claimed && (
+                  <Badge variant="success" className="gap-1 text-[10px] px-1.5 py-0">
+                    <CheckCircle2 className="h-3 w-3" /> {t("daily.claimed")}
                   </Badge>
-                ) : challenge.kind === "call" ? (
-                  <Link href={`/learn/${lang}/call`}>
-                    <Button size="sm" disabled={progressing}>
-                      <Mic className="h-4 w-4" /> {t("daily.startCall")} <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                ) : (
-                  <Link href={`/learn/${lang}/daily`}>
-                    <Button size="sm" disabled={progressing} className={cn(completed && "from-emerald-500 to-cyan-500")}>
-                      {completed ? t("daily.claim") : t("daily.startChallenge")} <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
                 )}
-                {!claimed && completed && challenge.kind !== "call" && (
-                  <Button size="sm" variant="secondary" onClick={claim}>
-                    <Trophy className="h-4 w-4" /> {t("daily.claim")} +{challenge.bonusXp}
-                  </Button>
-                )}
-                <span className="text-xs text-slate-300">{language.flag} {langNameI18n(lang, uiLang)}</span>
               </div>
+              <div className="font-bold text-base text-slate-100 truncate">{t(`daily.kind.${challenge.kind}`)}</div>
+              <div className="text-xs text-slate-200 truncate">{t(`daily.desc.${challenge.kind}`)}</div>
             </div>
+            {!claimed && (
+              challenge.kind === "call" ? (
+                <Link href={`/learn/${lang}/call`}>
+                  <Button size="sm" disabled={progressing}>
+                    <Mic className="h-4 w-4" /> {t("daily.startCall")}
+                  </Button>
+                </Link>
+              ) : completed ? (
+                <Button size="sm" variant="secondary" onClick={claim}>
+                  <Trophy className="h-4 w-4" /> +{challenge.bonusXp}
+                </Button>
+              ) : (
+                <Link href={`/learn/${lang}/daily`}>
+                  <Button size="sm" disabled={progressing}>
+                    {t("daily.startChallenge")} <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              )
+            )}
+            <span className="text-[10px] text-slate-300 hidden sm:inline shrink-0">{language.flag} {langNameI18n(lang, uiLang)}</span>
           </div>
         </CardContent>
       </Card>

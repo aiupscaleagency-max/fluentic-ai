@@ -3,7 +3,7 @@
 import * as React from "react";
 import { motion } from "framer-motion";
 import type { LangCode } from "@/lib/languages";
-import { getLessons, type Lesson } from "@/lib/lessons";
+import { getLessons, getLessonI18n, type Lesson } from "@/lib/lessons";
 import {
   getCompletedLessons,
   getLessonActivity,
@@ -19,12 +19,14 @@ import { Lock, CheckCircle2, Play, Heart, PartyPopper, Sparkles, GraduationCap, 
 import { cn } from "@/lib/cn";
 import { CEFR_DESCRIPTIONS, type CefrLevel, getLevel } from "@/lib/level";
 import { useT } from "@/lib/i18n";
+import { useUiLang } from "@/lib/ui-language";
 import { Confetti } from "./confetti";
 
 // Visuell Duolingo-liknande lektionsväg.
 // Noder zig-zaggar, klar = grön glow, aktiv = pulserande violet, låst = grayscale.
 export function LessonPath({ lang }: { lang: LangCode }) {
   const t = useT();
+  const uiLang = useUiLang();
   const lessons = React.useMemo(() => getLessons(lang), [lang]);
   const [completed, setCompleted] = React.useState<string[]>([]);
   const [activeId, setActiveId] = React.useState<string | null>(null);
@@ -235,11 +237,11 @@ export function LessonPath({ lang }: { lang: LangCode }) {
                     >
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-sm">
-                          {lesson.number}. {lesson.title}
+                          {lesson.number}. {getLessonI18n(lesson, uiLang).title}
                         </span>
                         <Badge variant="outline">{lesson.level}</Badge>
                       </div>
-                      <p className="text-xs text-slate-400 mt-1">{lesson.goalSv}</p>
+                      <p className="text-xs text-slate-300 mt-1">{getLessonI18n(lesson, uiLang).goal}</p>
                       <div className="mt-2 flex items-center gap-2 flex-wrap">
                         {!done && unlocked && (
                           <Badge variant={steps === 3 ? "success" : "secondary"}>
@@ -301,7 +303,7 @@ export function LessonPath({ lang }: { lang: LangCode }) {
             <div className="space-y-3 relative">
               <Confetti count={28} className="-top-10" />
               <p className="text-sm">
-                {t("path.celebrate.body")} <strong>{celebrate.title}</strong>.{" "}
+                {t("path.celebrate.body")} <strong>{getLessonI18n(celebrate, uiLang).title}</strong>.{" "}
                 <span className="inline-flex items-center gap-1">
                   +20 XP <Heart className="h-3.5 w-3.5 text-rose-400 fill-rose-400" />
                 </span>
