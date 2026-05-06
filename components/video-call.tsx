@@ -410,7 +410,7 @@ export function VideoCall({
 
         <ActionButton
           onClick={() => setSpeakerOn((s) => !s)}
-          tooltip={speakerOn ? "Tysta Hector" : "Slå på Hector"}
+          tooltip={speakerOn ? "Tysta Hectór" : "Slå på Hectór"}
           active={speakerOn}
           color={speakerOn ? "violet" : "muted"}
         >

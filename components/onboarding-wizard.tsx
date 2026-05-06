@@ -334,7 +334,7 @@ function Step1({ onNext }: { onNext: () => void }) {
         <ul className="text-sm space-y-2 text-left">
           <li className="flex items-center gap-2"><Check className="h-4 w-4 text-cyan-400" /> Ett eller flera språk att lära dig</li>
           <li className="flex items-center gap-2"><Check className="h-4 w-4 text-cyan-400" /> Mål — vardag, business, resa, akademi…</li>
-          <li className="flex items-center gap-2"><Check className="h-4 w-4 text-cyan-400" /> Hector — Sofia, Marco, Luna eller Diego</li>
+          <li className="flex items-center gap-2"><Check className="h-4 w-4 text-cyan-400" /> Hectór — Sofia, Marco, Luna eller Diego</li>
           <li className="flex items-center gap-2"><Check className="h-4 w-4 text-cyan-400" /> Snabbt röst-test som hittar din CEFR-nivå</li>
           <li className="flex items-center gap-2"><Check className="h-4 w-4 text-cyan-400" /> Träningsschema — en klick</li>
         </ul>
@@ -579,9 +579,9 @@ function StepPersona({
           <span className="text-2xl">{language.flag}</span>
           <span>{language.name}</span>
         </div>
-        <h2 className="text-3xl sm:text-4xl font-bold">Vem ska din Hector vara?</h2>
+        <h2 className="text-3xl sm:text-4xl font-bold">Vem ska din Hectór vara?</h2>
         <p className="text-slate-300">
-          Din Hector sätter tonen i samtalen. Du kan byta när som helst.
+          Din Hectór sätter tonen i samtalen. Du kan byta när som helst.
         </p>
       </div>
 

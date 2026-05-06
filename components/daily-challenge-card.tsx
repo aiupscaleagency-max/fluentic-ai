@@ -12,13 +12,17 @@ import { useLevel } from "@/lib/use-level";
 import { getDailyChallenge, getChallengeState, claimChallenge, type DailyChallenge } from "@/lib/daily";
 import { addXP } from "@/lib/storage";
 import { cn } from "@/lib/cn";
-import { getLanguage } from "@/lib/languages";
+import { getLanguage, langNameI18n } from "@/lib/languages";
+import { useUiLang } from "@/lib/ui-language";
+import { useT } from "@/lib/i18n";
 
 // Visar dagens utmaning på toppen av /learn/[lang]. När klar — claim-knapp ger +50 XP.
 // För "translate" och "listen" navigerar vi till en mini-runner-sida (samma struktur som mix-session).
 export function DailyChallengeCard({ lang }: { lang: LangCode }) {
   const language = getLanguage(lang)!;
   const level = useLevel(lang);
+  const t = useT();
+  const uiLang = useUiLang();
   const [challenge, setChallenge] = React.useState<DailyChallenge | null>(null);
   const [state, setState] = React.useState<{ date: string; claimed: boolean }>({ date: "", claimed: false });
   const [progressing, setProgressing] = React.useState(false);
@@ -80,38 +84,39 @@ export function DailyChallengeCard({ lang }: { lang: LangCode }) {
             <div className="text-5xl shrink-0">{challenge.emoji}</div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className="text-xs uppercase tracking-wider text-amber-300 font-bold">Dagens utmaning</span>
+                {/* Höjd kontrast — text-amber-200 istället för 300 så den syns tydligare */}
+                <span className="text-xs uppercase tracking-wider text-amber-200 font-extrabold">{t("daily.title")}</span>
                 <Badge variant="warning" className="gap-1">
                   <Trophy className="h-3 w-3" /> +{challenge.bonusXp} XP
                 </Badge>
               </div>
-              <h3 className="text-lg font-bold">{challenge.title}</h3>
-              <p className="text-sm text-slate-300 mt-0.5">{challenge.description}</p>
+              <h3 className="text-lg font-bold">{t(`daily.kind.${challenge.kind}`)}</h3>
+              <p className="text-sm text-slate-200 mt-0.5">{t(`daily.desc.${challenge.kind}`)}</p>
 
               <div className="mt-3 flex items-center gap-2 flex-wrap">
                 {claimed ? (
                   <Badge variant="success" className="gap-1">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Klar idag
+                    <CheckCircle2 className="h-3.5 w-3.5" /> {t("daily.claimed")}
                   </Badge>
                 ) : challenge.kind === "call" ? (
                   <Link href={`/learn/${lang}/call`}>
                     <Button size="sm" disabled={progressing}>
-                      <Mic className="h-4 w-4" /> Starta samtal <ArrowRight className="h-4 w-4" />
+                      <Mic className="h-4 w-4" /> {t("daily.startCall")} <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>
                 ) : (
                   <Link href={`/learn/${lang}/daily`}>
                     <Button size="sm" disabled={progressing} className={cn(completed && "from-emerald-500 to-cyan-500")}>
-                      {completed ? "Hämta belöning" : "Starta utmaning"} <ArrowRight className="h-4 w-4" />
+                      {completed ? t("daily.claim") : t("daily.startChallenge")} <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>
                 )}
                 {!claimed && completed && challenge.kind !== "call" && (
                   <Button size="sm" variant="secondary" onClick={claim}>
-                    <Trophy className="h-4 w-4" /> Claim +{challenge.bonusXp}
+                    <Trophy className="h-4 w-4" /> {t("daily.claim")} +{challenge.bonusXp}
                   </Button>
                 )}
-                <span className="text-xs text-slate-400">{language.flag} {language.name}</span>
+                <span className="text-xs text-slate-300">{language.flag} {langNameI18n(lang, uiLang)}</span>
               </div>
             </div>
           </div>

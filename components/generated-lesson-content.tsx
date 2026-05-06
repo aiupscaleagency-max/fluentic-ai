@@ -10,6 +10,7 @@ import type { LangCode } from "@/lib/languages";
 import { getLanguage } from "@/lib/languages";
 import { LESSONS } from "@/lib/lessons";
 import { useGeneratedLessonContent } from "@/lib/lesson-content";
+import { useT } from "@/lib/i18n";
 
 // Visar lektions-specifikt vocab + phrases. Auto-genereras via Gemini om
 // vi inte redan har handgjord data. Cachas på server (tmpdir) + klient (localStorage).
@@ -21,6 +22,7 @@ export function GeneratedLessonContent({
   lessonId: string | null;
 }) {
   const language = getLanguage(lang)!;
+  const t = useT();
   const lesson = lessonId ? LESSONS.find((l) => l.id === lessonId) : null;
   const { content, loading, error } = useGeneratedLessonContent(lessonId, lang);
 
@@ -35,8 +37,8 @@ export function GeneratedLessonContent({
   if (!lessonId || !lesson) {
     return (
       <Card>
-        <CardContent className="p-6 text-center text-sm text-slate-400">
-          Välj en aktiv lektion i lärvägen för att se ord och fraser.
+        <CardContent className="p-6 text-center text-sm text-slate-300">
+          {t("gen.empty")}
         </CardContent>
       </Card>
     );
@@ -45,9 +47,9 @@ export function GeneratedLessonContent({
   if (loading) {
     return (
       <Card>
-        <CardContent className="p-6 text-center text-sm text-slate-400 flex flex-col items-center gap-3">
+        <CardContent className="p-6 text-center text-sm text-slate-300 flex flex-col items-center gap-3">
           <Loader2 className="h-6 w-6 animate-spin text-violet-400" />
-          AI:n förbereder material för {lesson.title}…
+          {t("gen.preparing")} {lesson.title}…
         </CardContent>
       </Card>
     );
@@ -56,8 +58,8 @@ export function GeneratedLessonContent({
   if (error) {
     return (
       <Card>
-        <CardContent className="p-6 text-sm text-red-400">
-          Kunde inte hämta material: {error}
+        <CardContent className="p-6 text-sm text-red-300">
+          {t("gen.error")} {error}
         </CardContent>
       </Card>
     );
@@ -66,8 +68,8 @@ export function GeneratedLessonContent({
   if (!content) {
     return (
       <Card>
-        <CardContent className="p-6 text-sm text-slate-400">
-          Inget material än.
+        <CardContent className="p-6 text-sm text-slate-300">
+          {t("common.loading")}
         </CardContent>
       </Card>
     );
@@ -87,19 +89,19 @@ export function GeneratedLessonContent({
               {lesson.number}. {lesson.title}
               <Badge variant="outline">{lesson.level}</Badge>
             </div>
-            <div className="text-xs text-slate-400">{lesson.goalSv}</div>
+            <div className="text-xs text-slate-300">{lesson.goalSv}</div>
           </div>
         </div>
         <Badge variant="secondary" className="gap-1">
-          <Sparkles className="h-3 w-3" /> AI-skapat
+          <Sparkles className="h-3 w-3" /> {t("gen.aiCreated")}
         </Badge>
       </div>
 
       {/* Vocab */}
       <Card>
         <CardContent className="p-4 space-y-3">
-          <h3 className="text-sm font-semibold flex items-center gap-2 text-slate-200">
-            <BookOpen className="h-4 w-4 text-cyan-300" /> Ord ({content.vocab.length})
+          <h3 className="text-sm font-semibold flex items-center gap-2 text-slate-100">
+            <BookOpen className="h-4 w-4 text-cyan-300" /> {t("gen.words")} ({content.vocab.length})
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {content.vocab.map((v, i) => (
@@ -111,13 +113,13 @@ export function GeneratedLessonContent({
                   <div className="font-semibold text-base text-slate-100 truncate" dir={language.dir} lang={lang}>
                     {v.word}
                   </div>
-                  <div className="text-xs text-slate-400 truncate">{v.sv}</div>
+                  <div className="text-xs text-slate-300 truncate">{v.sv}</div>
                 </div>
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => speak(v.word)}
-                  aria-label="Lyssna"
+                  aria-label={t("common.listen")}
                 >
                   <Volume2 className="h-4 w-4" />
                 </Button>
@@ -130,8 +132,8 @@ export function GeneratedLessonContent({
       {/* Phrases */}
       <Card>
         <CardContent className="p-4 space-y-3">
-          <h3 className="text-sm font-semibold flex items-center gap-2 text-slate-200">
-            <MessageSquare className="h-4 w-4 text-violet-300" /> Fraser ({content.phrases.length})
+          <h3 className="text-sm font-semibold flex items-center gap-2 text-slate-100">
+            <MessageSquare className="h-4 w-4 text-violet-300" /> {t("gen.phrases")} ({content.phrases.length})
           </h3>
           <div className="space-y-2">
             {content.phrases.map((p, i) => (
@@ -143,9 +145,9 @@ export function GeneratedLessonContent({
                   <div className="font-medium text-slate-100" dir={language.dir} lang={lang}>
                     {p.text}
                   </div>
-                  <div className="text-xs text-slate-400">{p.sv}</div>
+                  <div className="text-xs text-slate-300">{p.sv}</div>
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => speak(p.text)} aria-label="Lyssna">
+                <Button size="sm" variant="ghost" onClick={() => speak(p.text)} aria-label={t("common.listen")}>
                   <Volume2 className="h-4 w-4" />
                 </Button>
               </div>

@@ -8,8 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Trophy } from "lucide-react";
 import { ACHIEVEMENTS, getUnlocked, checkAchievements } from "@/lib/achievements";
 import { cn } from "@/lib/cn";
+import { useT } from "@/lib/i18n";
 
 export default function AchievementsPage() {
+  const t = useT();
   const [unlocked, setUnlocked] = React.useState<Set<string>>(new Set());
 
   React.useEffect(() => {
@@ -34,7 +36,7 @@ export default function AchievementsPage() {
     >
       <div className="flex items-center justify-between">
         <Link href="/" className="inline-flex items-center text-sm text-slate-300 hover:text-cyan-300">
-          <ArrowLeft className="h-4 w-4 mr-1" /> Hem
+          <ArrowLeft className="h-4 w-4 mr-1" /> {t("ach.home")}
         </Link>
         <Badge variant="warning" className="gap-1">
           <Trophy className="h-3 w-3" /> {done} / {total}
@@ -43,9 +45,9 @@ export default function AchievementsPage() {
 
       <div className="text-center space-y-1">
         <h1 className="text-3xl font-bold flex items-center justify-center gap-2">
-          <Trophy className="h-7 w-7 text-amber-300" /> Achievements
+          <Trophy className="h-7 w-7 text-amber-300" /> {t("ach.title")}
         </h1>
-        <p className="text-sm text-slate-400">Markera milestones på din språkresa.</p>
+        <p className="text-sm text-slate-300">{t("ach.subtitle")}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -71,7 +73,7 @@ export default function AchievementsPage() {
                   <div className="min-w-0">
                     <div className="font-semibold flex items-center gap-2 flex-wrap">
                       {a.title}
-                      {unl && <Badge variant="success" className="gap-1"><Trophy className="h-3 w-3" /> Klar</Badge>}
+                      {unl && <Badge variant="success" className="gap-1"><Trophy className="h-3 w-3" /> {t("ach.done")}</Badge>}
                     </div>
                     <div className="text-xs text-slate-400 mt-0.5">{a.description}</div>
                   </div>

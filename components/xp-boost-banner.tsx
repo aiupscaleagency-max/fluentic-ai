@@ -4,6 +4,7 @@ import * as React from "react";
 import { motion } from "framer-motion";
 import { Zap, Calendar } from "lucide-react";
 import { isXpBoostActive, XP_WEEKEND_MULTIPLIER } from "@/lib/storage";
+import { useT } from "@/lib/i18n";
 
 // Visas bara på helger — drar uppmärksamhet till bonus-XP-fönstret.
 // Hur många timmar är kvar tills boosten löper ut (söndag 23:59 lokalt)?
@@ -20,6 +21,7 @@ function hoursLeftThisWeekend(now: Date): number {
 }
 
 export function XpBoostBanner() {
+  const t = useT();
   const [active, setActive] = React.useState(false);
   const [hoursLeft, setHoursLeft] = React.useState(0);
 
@@ -47,12 +49,12 @@ export function XpBoostBanner() {
       </div>
       <div className="min-w-0 flex-1">
         <div className="font-bold text-sm text-amber-100 flex items-center gap-2 flex-wrap">
-          {XP_WEEKEND_MULTIPLIER}x XP-helg pågår
-          <span className="inline-flex items-center gap-1 text-xs font-normal text-amber-200/80">
-            <Calendar className="h-3 w-3" /> {hoursLeft}h kvar
+          {XP_WEEKEND_MULTIPLIER}{t("xp.boost.title")}
+          <span className="inline-flex items-center gap-1 text-xs font-normal text-amber-100/90">
+            <Calendar className="h-3 w-3" /> {hoursLeft}{t("xp.boost.left")}
           </span>
         </div>
-        <div className="text-xs text-amber-100/80">All XP du tjänar i helgen dubblas automatiskt.</div>
+        <div className="text-xs text-amber-100">{t("xp.boost.body")}</div>
       </div>
     </motion.div>
   );

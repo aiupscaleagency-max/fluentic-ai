@@ -4,7 +4,7 @@ import { use } from "react";
 import * as React from "react";
 import { motion } from "framer-motion";
 import { notFound } from "next/navigation";
-import { isValidLangCode, getLanguage, LANGUAGES } from "@/lib/languages";
+import { isValidLangCode, getLanguage, langNameI18n, LANGUAGES } from "@/lib/languages";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Flashcards } from "@/components/flashcards";
 import { Conversation } from "@/components/conversation";
@@ -32,6 +32,7 @@ import { Mic, Dices, Trophy } from "lucide-react";
 import { getActiveLesson } from "@/lib/storage";
 import type { LangCode } from "@/lib/languages";
 import { useT } from "@/lib/i18n";
+import { useUiLang } from "@/lib/ui-language";
 
 export default function LearnPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = use(params);
@@ -40,6 +41,8 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
   }
   const language = getLanguage(lang)!;
   const t = useT();
+  const uiLang = useUiLang();
+  const targetName = langNameI18n(lang, uiLang);
 
   const [activeLesson, setActiveLesson] = React.useState<string | null>(null);
   React.useEffect(() => {
@@ -62,7 +65,7 @@ export default function LearnPage({ params }: { params: Promise<{ lang: string }
         <div className="flex items-center gap-3">
           <div className="text-4xl drop-shadow">{language.flag}</div>
           <div>
-            <h1 className="text-2xl font-bold">{t("learn.title")} {language.name.toLowerCase()}</h1>
+            <h1 className="text-2xl font-bold">{t("learn.title")} {targetName.toLowerCase()}</h1>
             <p className="text-sm text-slate-400" dir={language.dir} lang={lang}>
               {language.native}
             </p>

@@ -236,6 +236,36 @@ body::after {
 }
 .lesson-active-pulse { animation: lesson-pulse 1.8s ease-in-out infinite; }
 
+/* === Confetti-burst för lesson-complete och achievement-unlock === */
+@keyframes confetti-rise {
+  0%   { transform: translateY(0) rotate(0deg);    opacity: 0; }
+  10%  { opacity: 1; }
+  100% { transform: translateY(-300px) rotate(720deg); opacity: 0; }
+}
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  animation: confetti-rise 1.4s ease-out forwards;
+  pointer-events: none;
+}
+
+/* === Bounce-in för celebrations + achievements === */
+@keyframes bounce-in {
+  0%   { transform: scale(0.3) rotate(-10deg); opacity: 0; }
+  50%  { transform: scale(1.08) rotate(2deg);  opacity: 1; }
+  100% { transform: scale(1)    rotate(0);     opacity: 1; }
+}
+.bounce-in { animation: bounce-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+/* === Sparkle-burst kring noder === */
+@keyframes sparkle-twinkle {
+  0%, 100% { transform: scale(0.6); opacity: 0.3; }
+  50%      { transform: scale(1.3); opacity: 1; }
+}
+.sparkle-twinkle { animation: sparkle-twinkle 2s ease-in-out infinite; }
+
 /* === Standard select/inputs på mörk bakgrund === */
 select, input[type="time"], input[type="number"], input[type="text"], input[type="email"] {
   color-scheme: dark;

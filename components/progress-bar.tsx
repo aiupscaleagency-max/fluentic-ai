@@ -6,8 +6,10 @@ import { getSpokenToday, getSpokenStreak, SPOKEN_DAILY_GOAL_SECONDS } from "@/li
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Flame, Sparkles, Heart, Snowflake, Mic } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 export function ProgressBar() {
+  const t = useT();
   const [xp, setXp] = React.useState(0);
   const [streak, setStreak] = React.useState(0);
   const [freezes, setFreezes] = React.useState(0);
@@ -70,20 +72,21 @@ export function ProgressBar() {
             </text>
           </svg>
           <div className="flex flex-wrap gap-2 items-center">
-            <Badge variant="default" className="gap-1"><Sparkles className="h-3 w-3" />{xp} XP</Badge>
-            <Badge variant="warning" className="gap-1"><Flame className="h-3 w-3" />{streak} dag{streak === 1 ? "" : "ars"}</Badge>
-            <Badge variant="secondary" className="gap-1"><Mic className="h-3 w-3" />{spokenMin} min · {spokenStreak}d</Badge>
+            <Badge variant="default" className="gap-1"><Sparkles className="h-3 w-3" />{xp} {t("prog.xp")}</Badge>
+            <Badge variant="warning" className="gap-1"><Flame className="h-3 w-3" />{streak} {streak === 1 ? t("prog.day") : t("prog.days")}</Badge>
+            <Badge variant="secondary" className="gap-1"><Mic className="h-3 w-3" />{spokenMin} {t("prog.min")} · {spokenStreak}d</Badge>
             <Badge variant="secondary" className="gap-1"><Snowflake className="h-3 w-3" />{freezes}</Badge>
             <span className="inline-flex items-center gap-1">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Heart key={i} className={`h-4 w-4 ${i < hearts ? "text-red-500 fill-red-500" : "text-slate-300"}`} />
+                <Heart key={i} className={`h-4 w-4 ${i < hearts ? "text-red-500 fill-red-500" : "text-slate-400"}`} />
               ))}
             </span>
           </div>
         </div>
-        <div className="text-xs text-slate-500 text-right">
-          <div>{todayXp}/{goal} XP idag</div>
-          <div className="text-[11px] text-slate-400">Talad: {spokenMin}/{spokenGoalMin} min</div>
+        {/* Höjd kontrast — text-slate-300 i st.f. 500 så den verkligen syns */}
+        <div className="text-xs text-slate-300 text-right">
+          <div>{todayXp}/{goal} {t("prog.xp.today")}</div>
+          <div className="text-[11px] text-slate-400">{t("prog.spoken")}: {spokenMin}/{spokenGoalMin} {t("prog.min")}</div>
         </div>
       </CardContent>
     </Card>

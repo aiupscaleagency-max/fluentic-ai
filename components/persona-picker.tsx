@@ -41,21 +41,21 @@ export function PersonaPicker({ lang }: { lang: LangCode }) {
         type="button"
         onClick={() => setOpen(true)}
         className="inline-flex"
-        aria-label="Byt Hector"
+        aria-label="Byt Hectór"
       >
         <Badge variant="outline" className="gap-1 cursor-pointer hover:bg-white/10">
           <Sparkles className="h-3 w-3" />
-          {currentData ? `${currentData.emoji} ${currentData.name}` : "Välj Hector"}
+          {currentData ? `${currentData.emoji} ${currentData.name}` : "Välj Hectór"}
         </Badge>
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogHeader>
-          <DialogTitle>Vem ska din Hector vara?</DialogTitle>
+          <DialogTitle>Vem ska din Hectór vara?</DialogTitle>
         </DialogHeader>
         <DialogContent>
           <p className="text-sm text-slate-400 mb-4">
-            Din Hector sätter tonen i samtalen. Du kan byta när du vill.
+            Din Hectór sätter tonen i samtalen. Du kan byta när du vill.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {PERSONAS.map((p, i) => {

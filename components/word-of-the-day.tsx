@@ -9,11 +9,13 @@ import { getWordOfTheDay } from "@/lib/daily";
 import type { LangCode } from "@/lib/languages";
 import { getLanguage } from "@/lib/languages";
 import { useLevel } from "@/lib/use-level";
+import { useT } from "@/lib/i18n";
 
 // Visar dagens ord/fras med uttal-knapp. Pickar deterministiskt per dag.
 export function WordOfTheDay({ lang }: { lang: LangCode }) {
   const language = getLanguage(lang)!;
   const level = useLevel(lang);
+  const t = useT();
   const [entry, setEntry] = React.useState<ReturnType<typeof getWordOfTheDay>>(null);
 
   React.useEffect(() => {
@@ -34,17 +36,17 @@ export function WordOfTheDay({ lang }: { lang: LangCode }) {
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
       <Card>
         <CardContent className="p-5 flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-violet-300 font-bold">
-            <Sparkles className="h-4 w-4" /> Dagens ord
+          <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-violet-200 font-extrabold">
+            <Sparkles className="h-4 w-4" /> {t("wotd.title")}
           </div>
           <div className="flex items-baseline gap-3 min-w-0 flex-1">
             <span className="text-2xl font-bold text-slate-100" dir={language.dir} lang={lang}>
               {entry.word}
             </span>
-            <span className="text-sm text-slate-400 truncate">— {entry.sv}</span>
+            <span className="text-sm text-slate-300 truncate">— {entry.sv}</span>
           </div>
           <Button size="sm" variant="secondary" onClick={speak}>
-            <Volume2 className="h-4 w-4" /> Lyssna
+            <Volume2 className="h-4 w-4" /> {t("common.listen")}
           </Button>
         </CardContent>
       </Card>

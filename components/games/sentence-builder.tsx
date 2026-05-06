@@ -11,11 +11,13 @@ import { getLanguage } from "@/lib/languages";
 import { useLevel } from "@/lib/use-level";
 import { PHRASES } from "@/lib/phrases";
 import { addXP } from "@/lib/storage";
+import { useT } from "@/lib/i18n";
 
 // Sentence-builder: användaren klickar ord i rätt ordning för att bygga upp meningen.
 // Klick på orden längst ner = lägg till. Klick på orden längst upp = ta bort.
 // Vi shufflar målmeningens ord + lägger till 2 distraktörer från en annan fras.
 export function SentenceBuilder({ lang }: { lang: LangCode }) {
+  const t = useT();
   const language = getLanguage(lang)!;
   const level = useLevel(lang);
 
@@ -114,10 +116,10 @@ export function SentenceBuilder({ lang }: { lang: LangCode }) {
       <CardContent className="p-5 space-y-5">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <div className="text-xs uppercase tracking-wider text-slate-400">Bygg meningen</div>
-            <div className="text-sm text-slate-300 mt-0.5">Översätt: <span className="font-semibold text-slate-100">{phrase.sv}</span></div>
+            <div className="text-xs uppercase tracking-wider text-slate-300">{t("sb.title")}</div>
+            <div className="text-sm text-slate-200 mt-0.5">{t("sb.translate")} <span className="font-semibold text-slate-100">{phrase.sv}</span></div>
           </div>
-          <Badge variant="outline">Nivå {phrase.level}</Badge>
+          <Badge variant="outline">{t("path.level")} {phrase.level}</Badge>
         </div>
 
         {/* Picked-area: orden i ordning */}
@@ -131,7 +133,7 @@ export function SentenceBuilder({ lang }: { lang: LangCode }) {
           } p-3 flex flex-wrap items-start gap-2`}
         >
           {picked.length === 0 && (
-            <span className="text-xs text-slate-500 italic">Klicka på orden nedanför för att bygga meningen…</span>
+            <span className="text-xs text-slate-300 italic">{t("sb.empty")}</span>
           )}
           {picked.map((t, i) => (
             <motion.button
@@ -183,7 +185,7 @@ export function SentenceBuilder({ lang }: { lang: LangCode }) {
               className={`text-sm flex items-center gap-1 ${right ? "text-emerald-400" : "text-red-400"}`}
             >
               {right ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-              {right ? "Helt rätt! +3 XP" : `Rätt ordning: ${round.targetTokens.join(" ")}`}
+              {right ? t("sb.allRight") : `${t("sb.correctOrder")} ${round.targetTokens.join(" ")}`}
             </motion.div>
           )}
         </AnimatePresence>
@@ -191,19 +193,19 @@ export function SentenceBuilder({ lang }: { lang: LangCode }) {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={speak}>
-              <Volume2 className="h-4 w-4" /> Lyssna
+              <Volume2 className="h-4 w-4" /> {t("common.listen")}
             </Button>
             {!submitted && picked.length > 0 && (
               <Button variant="ghost" size="sm" onClick={reset}>
-                <RotateCcw className="h-4 w-4" /> Återställ
+                <RotateCcw className="h-4 w-4" /> {t("sb.reset")}
               </Button>
             )}
           </div>
           <div className="flex gap-2">
             {!submitted ? (
-              <Button onClick={check} disabled={picked.length === 0}>Kontrollera</Button>
+              <Button onClick={check} disabled={picked.length === 0}>{t("daily.runner.check")}</Button>
             ) : (
-              <Button onClick={next}>Nästa <ChevronRight className="h-4 w-4" /></Button>
+              <Button onClick={next}>{t("common.next")} <ChevronRight className="h-4 w-4" /></Button>
             )}
           </div>
         </div>

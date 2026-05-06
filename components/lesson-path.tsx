@@ -18,10 +18,13 @@ import { Dialog, DialogHeader, DialogTitle, DialogContent } from "./ui/dialog";
 import { Lock, CheckCircle2, Play, Heart, PartyPopper, Sparkles, GraduationCap, FastForward, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { CEFR_DESCRIPTIONS, type CefrLevel, getLevel } from "@/lib/level";
+import { useT } from "@/lib/i18n";
+import { Confetti } from "./confetti";
 
 // Visuell Duolingo-liknande lektionsväg.
 // Noder zig-zaggar, klar = grön glow, aktiv = pulserande violet, låst = grayscale.
 export function LessonPath({ lang }: { lang: LangCode }) {
+  const t = useT();
   const lessons = React.useMemo(() => getLessons(lang), [lang]);
   const [completed, setCompleted] = React.useState<string[]>([]);
   const [activeId, setActiveId] = React.useState<string | null>(null);
@@ -97,7 +100,7 @@ export function LessonPath({ lang }: { lang: LangCode }) {
         <CardContent className="p-6">
           <div className="flex items-start justify-between gap-3 mb-1 flex-wrap">
             <h3 className="font-semibold flex items-center gap-2 text-base">
-              <Sparkles className="h-5 w-5 text-violet-300" /> Din lärväg
+              <Sparkles className="h-5 w-5 text-violet-300" /> {t("path.title")}
             </h3>
             <JumpToMyLevelButton
               lang={lang}
@@ -107,8 +110,8 @@ export function LessonPath({ lang }: { lang: LangCode }) {
               onApplied={refresh}
             />
           </div>
-          <p className="text-xs text-slate-400 mb-4">
-            Klara flashcards + lucka + lyssna för att markera lektionen som klar. +20 XP per lektion.
+          <p className="text-xs text-slate-300 mb-4">
+            {t("path.subtitle")}
           </p>
 
           {/* CEFR-progress-rad: visar antal klara per nivå */}
@@ -191,7 +194,7 @@ export function LessonPath({ lang }: { lang: LangCode }) {
                         : <ChevronRight className="h-4 w-4 shrink-0" />}
                       <GraduationCap className="h-4 w-4 shrink-0" />
                       <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 min-w-0 flex-1 text-left">
-                        <span className="font-bold text-sm">Nivå {lesson.level}</span>
+                        <span className="font-bold text-sm">{t("path.level")} {lesson.level}</span>
                         <span className="text-xs opacity-80 truncate">
                           {CEFR_DESCRIPTIONS[lesson.level].split(" — ")[1]}
                         </span>
@@ -240,14 +243,14 @@ export function LessonPath({ lang }: { lang: LangCode }) {
                       <div className="mt-2 flex items-center gap-2 flex-wrap">
                         {!done && unlocked && (
                           <Badge variant={steps === 3 ? "success" : "secondary"}>
-                            {steps}/3 steg
+                            {steps}/3 {t("path.lesson.steps")}
                           </Badge>
                         )}
-                        {active && !done && <Badge>Aktiv</Badge>}
-                        {done && <Badge variant="success">Klar</Badge>}
+                        {active && !done && <Badge>{t("path.lesson.active")}</Badge>}
+                        {done && <Badge variant="success">{t("path.lesson.done")}</Badge>}
                         {!done && unlocked && !active && (
                           <Button size="sm" onClick={() => start(lesson.id)} className="ml-auto">
-                            <Play className="h-3 w-3" /> Starta
+                            <Play className="h-3 w-3" /> {t("common.start")}
                           </Button>
                         )}
                       </div>
@@ -290,23 +293,24 @@ export function LessonPath({ lang }: { lang: LangCode }) {
       <Dialog open={celebrate !== null} onOpenChange={(o) => !o && setCelebrate(null)}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <PartyPopper className="h-5 w-5 text-violet-300" /> Lektion klar!
+            <PartyPopper className="h-5 w-5 text-violet-300" /> {t("path.celebrate.title")}
           </DialogTitle>
         </DialogHeader>
         <DialogContent>
           {celebrate && (
-            <div className="space-y-3">
+            <div className="space-y-3 relative">
+              <Confetti count={28} className="-top-10" />
               <p className="text-sm">
-                Du klarade <strong>{celebrate.title}</strong>.{" "}
+                {t("path.celebrate.body")} <strong>{celebrate.title}</strong>.{" "}
                 <span className="inline-flex items-center gap-1">
                   +20 XP <Heart className="h-3.5 w-3.5 text-rose-400 fill-rose-400" />
                 </span>
               </p>
-              <p className="text-xs text-slate-400">
-                Hjärtat är ifyllt och nästa lektion är upplåst. Bra jobbat!
+              <p className="text-xs text-slate-300">
+                {t("path.celebrate.unlock")}
               </p>
               <div className="flex justify-end">
-                <Button onClick={() => setCelebrate(null)}>Fortsätt</Button>
+                <Button onClick={() => setCelebrate(null)}>{t("common.continue")}</Button>
               </div>
             </div>
           )}
@@ -332,6 +336,7 @@ function JumpToMyLevelButton({
   activeId: string | null;
   onApplied: () => void;
 }) {
+  const t = useT();
   const [level, setLvl] = React.useState<CefrLevel | null>(null);
   React.useEffect(() => {
     setLvl(getLevel(lang));
@@ -359,8 +364,8 @@ function JumpToMyLevelButton({
     onApplied();
   }
   return (
-    <Button size="sm" variant="outline" onClick={jump} title={`Hoppa till första lektionen på nivå ${level}`}>
-      <FastForward className="h-3.5 w-3.5" /> Hoppa till {level}
+    <Button size="sm" variant="outline" onClick={jump} title={`${t("path.jumpto")} ${level}`}>
+      <FastForward className="h-3.5 w-3.5" /> {t("path.jumpto")} {level}
     </Button>
   );
 }
