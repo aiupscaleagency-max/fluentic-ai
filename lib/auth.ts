@@ -81,7 +81,11 @@ export async function signup(email: string, password: string, name: string): Pro
     if (error) return { user: null, error: error.message };
     if (!data.user) return { user: null, error: "Kunde inte skapa konto" };
 
-    // Skapa profil-rad i public.profiles. RLS-policy låter user inserta sin egen.
+    // Skapa profil-rad i fluentic_profiles. Triggern public.fluentic_handle_new_user
+    // borde göra det automatiskt, men på Supabase free-tier kan trigger-permissions
+    // mot auth.users vara restriktiva — så vi gör en upsert här som backup.
+    // RLS-policy "fluentic_profiles_insert_self" låter user inserta sin egen rad
+    // när session finns (dvs. när "Confirm email" är OFF i Supabase).
     const profile: Omit<User, "id"> & { id: string } = {
       id: data.user.id,
       email: cleanEmail,
@@ -89,13 +93,22 @@ export async function signup(email: string, password: string, name: string): Pro
       createdAt: Date.now(),
       tier: "free",
     };
-    await supabase.from("fluentic_profiles").upsert({
-      id: profile.id,
-      email: profile.email,
-      name: profile.name,
-      tier: profile.tier,
-      created_at: new Date(profile.createdAt).toISOString(),
-    });
+    if (data.session) {
+      // Vi har session direkt → upsert fungerar
+      const { error: upsertError } = await supabase.from("fluentic_profiles").upsert({
+        id: profile.id,
+        email: profile.email,
+        name: profile.name,
+        tier: profile.tier,
+        created_at: new Date(profile.createdAt).toISOString(),
+      });
+      if (upsertError) {
+        // Tyst fail — login() kommer skapa profil som backup om den saknas
+        console.warn("Profile upsert vid signup misslyckades:", upsertError.message);
+      }
+    }
+    // Om data.session saknas (email-confirmation på): user finns i auth.users men
+    // profil-raden skapas vid första login istället (backup nedan i login()).
     emit();
     return { user: profile, error: null };
   }
@@ -133,12 +146,29 @@ export async function login(email: string, password: string): Promise<AuthResult
     if (error) return { user: null, error: "Fel e-post eller lösenord" };
     if (!data.user) return { user: null, error: "Inloggning misslyckades" };
 
-    // Hämta profil
-    const { data: profile } = await supabase
+    // Hämta profil — om saknas (t.ex. trigger inte triggat) skapar vi den nu
+    // som backup. Vi har session efter signInWithPassword så RLS-insert funkar.
+    const { data: existingProfile } = await supabase
       .from("fluentic_profiles")
       .select("*")
       .eq("id", data.user.id)
-      .single();
+      .maybeSingle();
+
+    let profile = existingProfile;
+    if (!profile) {
+      const fallbackName = data.user.user_metadata?.name ?? cleanEmail.split("@")[0];
+      const { data: created } = await supabase
+        .from("fluentic_profiles")
+        .upsert({
+          id: data.user.id,
+          email: data.user.email ?? cleanEmail,
+          name: fallbackName,
+          tier: "free",
+        })
+        .select()
+        .single();
+      profile = created;
+    }
 
     const user: User = {
       id: data.user.id,
