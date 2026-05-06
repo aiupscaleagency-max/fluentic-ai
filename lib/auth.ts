@@ -1,32 +1,34 @@
 "use client";
 
-// Auth-system för Fluentic. Lokal localStorage-baserad mock för MVP — när vi
-// senare kopplar Supabase ersätts denna fil med Supabase Auth-helpers utan
-// att övriga komponenter behöver ändras (samma User-typ + samma hooks).
+// Auth-system för Fluentic.
 //
-// Säkerhet: detta är INTE produktionssäkert. Lösenord hashas inte, ingen rate-
-// limit, ingen email-verifiering. För familjen + tidiga betas räcker det. När
-// betalning aktiveras → byt till Supabase Auth.
+// PRIMARY: Supabase Auth (email + password) när NEXT_PUBLIC_SUPABASE_URL och
+// NEXT_PUBLIC_SUPABASE_ANON_KEY är satta. Profil + tier hämtas från
+// "profiles"-tabellen (se lib/supabase-schema.sql).
+//
+// FALLBACK: localStorage-baserad mock så lokal dev fungerar utan Supabase.
+// Samma User-typ + samma hooks så komponenter inte ser skillnad.
 import * as React from "react";
+import { getSupabaseBrowserClient, isSupabaseEnabled } from "./supabase";
 
 export interface User {
   id: string;
   email: string;
   name: string;
   createdAt: number;
-  // Medlemskaps-tier — för pricing-page. "free" är default.
   tier: "free" | "pro" | "family";
-  // Avatar-URL eller initialer fallback
   avatar?: string;
 }
 
-const USERS_KEY = "fluentic.users";          // alla registrerade
-const SESSION_KEY = "fluentic.session";      // current logged-in user-id
-
 interface StoredUser extends User {
-  // Plain-text för MVP. Ersätts vid Supabase-migration.
   password: string;
 }
+
+// ============================================================
+// LocalStorage-mock (fallback)
+// ============================================================
+const USERS_KEY = "fluentic.users";
+const SESSION_KEY = "fluentic.session";
 
 function readUsers(): StoredUser[] {
   if (typeof window === "undefined") return [];
@@ -48,28 +50,16 @@ function emit() {
   window.dispatchEvent(new CustomEvent("fluentic:auth-changed"));
 }
 
-export function getCurrentUser(): User | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const sessionId = window.localStorage.getItem(SESSION_KEY);
-    if (!sessionId) return null;
-    const user = readUsers().find((u) => u.id === sessionId);
-    if (!user) return null;
-    // Plocka bort password innan vi returnerar
-    const { password: _pw, ...safe } = user;
-    return safe;
-  } catch {
-    return null;
-  }
-}
+// ============================================================
+// Public API — auto-router till Supabase eller localStorage
+// ============================================================
 
-export interface SignupResult {
+export interface AuthResult {
   user: User | null;
   error: string | null;
 }
 
-export function signup(email: string, password: string, name: string): SignupResult {
-  if (typeof window === "undefined") return { user: null, error: "Server-only" };
+export async function signup(email: string, password: string, name: string): Promise<AuthResult> {
   const cleanEmail = email.trim().toLowerCase();
   if (!cleanEmail || !cleanEmail.includes("@")) {
     return { user: null, error: "Ogiltig e-postadress" };
@@ -77,6 +67,41 @@ export function signup(email: string, password: string, name: string): SignupRes
   if (password.length < 6) {
     return { user: null, error: "Lösenord måste vara minst 6 tecken" };
   }
+
+  const supabase = getSupabaseBrowserClient();
+  if (supabase) {
+    // SUPABASE-PATH
+    const { data, error } = await supabase.auth.signUp({
+      email: cleanEmail,
+      password,
+      options: {
+        data: { name: name.trim() },
+      },
+    });
+    if (error) return { user: null, error: error.message };
+    if (!data.user) return { user: null, error: "Kunde inte skapa konto" };
+
+    // Skapa profil-rad i public.profiles. RLS-policy låter user inserta sin egen.
+    const profile: Omit<User, "id"> & { id: string } = {
+      id: data.user.id,
+      email: cleanEmail,
+      name: name.trim() || cleanEmail.split("@")[0],
+      createdAt: Date.now(),
+      tier: "free",
+    };
+    await supabase.from("profiles").upsert({
+      id: profile.id,
+      email: profile.email,
+      name: profile.name,
+      tier: profile.tier,
+      created_at: new Date(profile.createdAt).toISOString(),
+    });
+    emit();
+    return { user: profile, error: null };
+  }
+
+  // LOCALSTORAGE-FALLBACK
+  if (typeof window === "undefined") return { user: null, error: "Server-only" };
   const users = readUsers();
   if (users.some((u) => u.email === cleanEmail)) {
     return { user: null, error: "E-post är redan registrerad" };
@@ -96,9 +121,38 @@ export function signup(email: string, password: string, name: string): SignupRes
   return { user: safe, error: null };
 }
 
-export function login(email: string, password: string): SignupResult {
-  if (typeof window === "undefined") return { user: null, error: "Server-only" };
+export async function login(email: string, password: string): Promise<AuthResult> {
   const cleanEmail = email.trim().toLowerCase();
+
+  const supabase = getSupabaseBrowserClient();
+  if (supabase) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password,
+    });
+    if (error) return { user: null, error: "Fel e-post eller lösenord" };
+    if (!data.user) return { user: null, error: "Inloggning misslyckades" };
+
+    // Hämta profil
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", data.user.id)
+      .single();
+
+    const user: User = {
+      id: data.user.id,
+      email: data.user.email ?? cleanEmail,
+      name: profile?.name ?? data.user.user_metadata?.name ?? cleanEmail.split("@")[0],
+      createdAt: profile?.created_at ? new Date(profile.created_at).getTime() : Date.now(),
+      tier: (profile?.tier ?? "free") as User["tier"],
+    };
+    emit();
+    return { user, error: null };
+  }
+
+  // FALLBACK
+  if (typeof window === "undefined") return { user: null, error: "Server-only" };
   const users = readUsers();
   const user = users.find((u) => u.email === cleanEmail);
   if (!user || user.password !== password) {
@@ -110,13 +164,72 @@ export function login(email: string, password: string): SignupResult {
   return { user: safe, error: null };
 }
 
-export function logout(): void {
+export async function logout(): Promise<void> {
+  const supabase = getSupabaseBrowserClient();
+  if (supabase) {
+    await supabase.auth.signOut();
+    emit();
+    return;
+  }
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(SESSION_KEY);
   emit();
 }
 
-export function updateUserTier(tier: User["tier"]): User | null {
+export async function getCurrentUserAsync(): Promise<User | null> {
+  const supabase = getSupabaseBrowserClient();
+  if (supabase) {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) return null;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", data.user.id)
+      .single();
+    return {
+      id: data.user.id,
+      email: data.user.email ?? "",
+      name: profile?.name ?? data.user.user_metadata?.name ?? data.user.email?.split("@")[0] ?? "",
+      createdAt: profile?.created_at ? new Date(profile.created_at).getTime() : Date.now(),
+      tier: (profile?.tier ?? "free") as User["tier"],
+    };
+  }
+  return getCurrentUserSync();
+}
+
+// Synkron variant — för komponenter som inte vill awaita.
+// I Supabase-mode returneras null tills useUser-hooken hunnit hämta.
+export function getCurrentUser(): User | null {
+  return getCurrentUserSync();
+}
+
+function getCurrentUserSync(): User | null {
+  if (typeof window === "undefined") return null;
+  if (isSupabaseEnabled()) {
+    // Supabase är async — använd useUser-hook istället. Returnera null som default.
+    return null;
+  }
+  try {
+    const sessionId = window.localStorage.getItem(SESSION_KEY);
+    if (!sessionId) return null;
+    const user = readUsers().find((u) => u.id === sessionId);
+    if (!user) return null;
+    const { password: _pw, ...safe } = user;
+    return safe;
+  } catch {
+    return null;
+  }
+}
+
+export async function updateUserTier(tier: User["tier"]): Promise<User | null> {
+  const supabase = getSupabaseBrowserClient();
+  if (supabase) {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) return null;
+    await supabase.from("profiles").update({ tier }).eq("id", auth.user.id);
+    emit();
+    return getCurrentUserAsync();
+  }
   if (typeof window === "undefined") return null;
   const sessionId = window.localStorage.getItem(SESSION_KEY);
   if (!sessionId) return null;
@@ -130,14 +243,36 @@ export function updateUserTier(tier: User["tier"]): User | null {
   return safe;
 }
 
-// React-hook
+// React-hook — fungerar både för Supabase och localStorage
 export function useUser(): User | null {
   const [user, setUser] = React.useState<User | null>(null);
+
   React.useEffect(() => {
-    setUser(getCurrentUser());
-    function onChange() { setUser(getCurrentUser()); }
+    let cancelled = false;
+
+    async function refresh() {
+      const u = await getCurrentUserAsync();
+      if (!cancelled) setUser(u);
+    }
+    refresh();
+
+    function onChange() { void refresh(); }
     window.addEventListener("fluentic:auth-changed", onChange);
-    return () => window.removeEventListener("fluentic:auth-changed", onChange);
+
+    // Supabase-listener för session-ändringar
+    const supabase = getSupabaseBrowserClient();
+    let unsub: (() => void) | undefined;
+    if (supabase) {
+      const { data } = supabase.auth.onAuthStateChange(() => { void refresh(); });
+      unsub = () => data.subscription.unsubscribe();
+    }
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("fluentic:auth-changed", onChange);
+      unsub?.();
+    };
   }, []);
+
   return user;
 }

@@ -77,22 +77,19 @@ export default function PricingPage() {
     },
   ];
 
-  function pickTier(id: User["tier"]) {
+  async function pickTier(id: User["tier"]) {
     if (!user) {
-      // Inte inloggad → till signup först. Vi sparar tier som intent.
       try {
         window.localStorage.setItem("fluentic.pending-tier", id);
       } catch { /* tyst */ }
       window.location.href = "/signup";
       return;
     }
-    // Inloggad: i prod skickar vi till Stripe Checkout. Just nu MVP-mock.
     if (id === "free") {
-      updateUserTier("free");
+      await updateUserTier("free");
       window.location.href = "/learn/es";
       return;
     }
-    // Visa "kommer snart"-modal för pro/family — Stripe är inte aktiverat
     alert(t("pricing.comingSoon"));
   }
 

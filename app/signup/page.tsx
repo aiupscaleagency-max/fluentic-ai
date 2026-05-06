@@ -20,11 +20,11 @@ export default function SignupPage() {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error } = signup(email, password, name);
+    const { error } = await signup(email, password, name);
     setLoading(false);
     if (error) {
       setError(error);

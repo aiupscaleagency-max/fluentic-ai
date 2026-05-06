@@ -31,8 +31,8 @@ export default function AccountPage() {
 
   if (!user) return null;
 
-  function doLogout() {
-    logout();
+  async function doLogout() {
+    await logout();
     router.replace("/");
   }
 
