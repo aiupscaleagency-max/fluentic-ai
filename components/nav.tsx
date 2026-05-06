@@ -10,6 +10,8 @@ import { SettingsDrawer } from "./settings-drawer";
 import { NotificationFeed } from "./notification-feed";
 import { useT } from "@/lib/i18n";
 import { useUiLang, setUiLang, UI_LANGS, type UiLang } from "@/lib/ui-language";
+import { useUser } from "@/lib/auth";
+import { User } from "lucide-react";
 
 const navItems: { href: string; key: string; icon: typeof Home }[] = [
   { href: "/",          key: "nav.home",      icon: Home },
@@ -21,6 +23,7 @@ export function Nav() {
   const pathname = usePathname();
   const t = useT();
   const uiLang = useUiLang();
+  const user = useUser();
   const [xp, setXp] = React.useState(0);
   const [streak, setStreak] = React.useState(0);
   const [hearts, setHearts] = React.useState(5);
@@ -51,6 +54,10 @@ export function Nav() {
       window.removeEventListener("scroll", onScroll);
     };
   }, []);
+
+  // Dölj nav på landing/auth-pages — de har egna headers (efter alla hooks)
+  const HIDE_ON = ["/", "/login", "/signup", "/pricing", "/unlock"];
+  if (HIDE_ON.includes(pathname ?? "")) return null;
 
   return (
     <>
@@ -145,6 +152,16 @@ export function Nav() {
             </div>
 
             <NotificationFeed />
+            {user && (
+              <Link
+                href="/account"
+                className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-bold italic text-white hover:bg-white/10"
+                title={user.name}
+              >
+                <User className="h-4 w-4" />
+                <span className="hidden sm:inline truncate max-w-[80px]">{user.name.split(" ")[0]}</span>
+              </Link>
+            )}
             <button
               onClick={() => setSettingsOpen(true)}
               className="flex h-8 w-8 items-center justify-center rounded-lg text-white hover:bg-white/10"

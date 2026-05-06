@@ -6,6 +6,7 @@ import { NotificationsRegister } from "@/components/notifications-register";
 import { AchievementWatcher } from "@/components/achievement-watcher";
 import { MaritzaChat } from "@/components/maritza-chat";
 import { InterpreterFab } from "@/components/interpreter-fab";
+import { AuthGuard } from "@/components/auth-guard";
 
 export const metadata: Metadata = {
   title: "Fluentic AI — Lär dig språk på det roliga sättet",
@@ -21,6 +22,7 @@ export default function RootLayout({
   return (
     <html lang="sv" className="dark">
       <body className="min-h-screen antialiased">
+        <AuthGuard />
         <OnboardingGuard />
         <NotificationsRegister />
         <AchievementWatcher />

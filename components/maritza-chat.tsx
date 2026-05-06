@@ -6,6 +6,8 @@ import { MessageCircle, X, Send, Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useUiLang } from "@/lib/ui-language";
 import { useT } from "@/lib/i18n";
+import { useUser } from "@/lib/auth";
+import { usePathname } from "next/navigation";
 
 interface Msg { role: "user" | "assistant"; content: string; }
 
@@ -14,9 +16,13 @@ const STORAGE_KEY = "fluentic.maritza.messages";
 // Floating chat-bubbel i nedre högra hörnet — Maritza, Mikes mamma-figur som
 // förklarar och hjälper på UI-språket. Persisterar konversation i localStorage
 // så den följer användaren mellan sidor.
+const HIDE_ON = ["/", "/login", "/signup", "/pricing", "/unlock"];
+
 export function MaritzaChat() {
   const t = useT();
   const uiLang = useUiLang();
+  const user = useUser();
+  const pathname = usePathname();
   const [open, setOpen] = React.useState(false);
   const [messages, setMessages] = React.useState<Msg[]>([]);
   const [input, setInput] = React.useState("");
@@ -90,6 +96,10 @@ export function MaritzaChat() {
     setMessages([]);
     try { window.localStorage.removeItem(STORAGE_KEY); } catch { /* tyst */ }
   }
+
+  // Dölj på publika sidor + om ej inloggad
+  if (!user) return null;
+  if (pathname && HIDE_ON.includes(pathname)) return null;
 
   return (
     <>
