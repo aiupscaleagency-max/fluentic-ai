@@ -188,6 +188,19 @@ export const STRINGS: Dict = {
   "interp.subtitle":      { sv: "Live-översättning under samtal", es: "Traducción en vivo en llamadas", en: "Live translation during calls" },
   "interp.openFull":      { sv: "Öppna full tolk",     es: "Abrir intérprete",       en: "Open full interpreter" },
   "interp.always":        { sv: "Alltid tillgänglig",  es: "Siempre disponible",     en: "Always available" },
+  "interp.locked":        { sv: "Lås upp med Pro",     es: "Desbloquea con Pro",     en: "Unlock with Pro" },
+  "interp.lockedBody":    { sv: "Adison live-tolk ingår i Pro och Family. Uppgradera för att få översättning vid samtal och resor.",
+                            es: "Adison intérprete en vivo está incluido en Pro y Family. Mejora para tener traducción en llamadas y viajes.",
+                            en: "Adison live interpreter is included in Pro and Family. Upgrade to get translation during calls and travel." },
+
+  // Agent-presentations (auto-popup vid första visning)
+  "agent.adison.intro":   { sv: "Hej! Jag är Adison, din live-tolk. Klicka på mig när du behöver översättning under ett samtal eller på resa.",
+                            es: "¡Hola! Soy Adison, tu intérprete en vivo. Haz clic en mí cuando necesites traducción durante una llamada o viaje.",
+                            en: "Hi! I'm Adison, your live interpreter. Click me whenever you need translation during a call or trip." },
+  "agent.maritza.intro":  { sv: "Hej älskling! Jag är Maritza, din snabba stödlärare. Fråga mig om grammatik, ord eller appen — jag svarar direkt.",
+                            es: "¡Hola mi amor! Soy Maritza, tu profesora de apoyo rápida. Pregúntame por gramática, palabras o la app — respondo al instante.",
+                            en: "Hi darling! I'm Maritza, your quick-help teacher. Ask me about grammar, words or the app — I'll answer right away." },
+  "agent.gotIt":          { sv: "Tack!",               es: "¡Gracias!",              en: "Got it!" },
 
   // Learn-page hero
   "learn.continue":       { sv: "Fortsätt din lektion",es: "Continúa tu lección",    en: "Continue your lesson" },

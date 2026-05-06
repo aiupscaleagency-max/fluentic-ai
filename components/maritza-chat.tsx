@@ -17,6 +17,7 @@ const STORAGE_KEY = "fluentic.maritza.messages";
 // förklarar och hjälper på UI-språket. Persisterar konversation i localStorage
 // så den följer användaren mellan sidor.
 const HIDE_ON = ["/", "/login", "/signup", "/pricing", "/unlock"];
+const SEEN_INTRO_KEY = "fluentic.maritza.seen-intro";
 
 export function MaritzaChat() {
   const t = useT();
@@ -24,6 +25,23 @@ export function MaritzaChat() {
   const user = useUser();
   const pathname = usePathname();
   const [open, setOpen] = React.useState(false);
+  const [showIntro, setShowIntro] = React.useState(false);
+
+  // Auto-presentation 1 gång för inloggade — popup intill bubblan
+  React.useEffect(() => {
+    if (!user) return;
+    if (pathname && HIDE_ON.includes(pathname)) return;
+    try {
+      if (window.localStorage.getItem(SEEN_INTRO_KEY) === "1") return;
+    } catch { return; }
+    const id = window.setTimeout(() => setShowIntro(true), 2500); // Liten paus efter Adison
+    return () => window.clearTimeout(id);
+  }, [user, pathname]);
+
+  function dismissIntro() {
+    setShowIntro(false);
+    try { window.localStorage.setItem(SEEN_INTRO_KEY, "1"); } catch { /* tyst */ }
+  }
   const [messages, setMessages] = React.useState<Msg[]>([]);
   const [input, setInput] = React.useState("");
   const [loading, setLoading] = React.useState(false);
@@ -103,15 +121,54 @@ export function MaritzaChat() {
 
   return (
     <>
+      {/* Auto-presentations-popup intill bubblan — visas 1 gång efter signup */}
+      <AnimatePresence>
+        {showIntro && !open && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="fixed bottom-24 right-5 z-[71] w-[min(290px,calc(100vw-2.5rem))] rounded-2xl glass-strong border-2 border-pink-300/40 px-4 py-3 shadow-2xl shadow-pink-500/30"
+          >
+            <button
+              type="button"
+              onClick={dismissIntro}
+              className="absolute right-2 top-2 rounded-md p-1 text-slate-400 hover:bg-white/10"
+              aria-label={t("common.close")}
+            >
+              <X className="h-3 w-3" />
+            </button>
+            <div className="flex items-start gap-2">
+              <div className="text-2xl shrink-0">💖</div>
+              <div className="min-w-0">
+                <div className="text-xs font-extrabold text-pink-200">Maritza · Stödlärare</div>
+                <p className="text-xs text-slate-200 leading-snug mt-1">{t("agent.maritza.intro")}</p>
+                <button
+                  type="button"
+                  onClick={dismissIntro}
+                  className="mt-2 text-xs font-bold text-pink-200 hover:text-pink-100"
+                >
+                  {t("agent.gotIt")}
+                </button>
+              </div>
+            </div>
+            {/* Pil ned till bubblan */}
+            <div className="absolute -bottom-2 right-6 h-3 w-3 rotate-45 bg-pink-300/15 border-r-2 border-b-2 border-pink-300/40" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Bubble-knapp */}
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => { setOpen((o) => !o); if (showIntro) dismissIntro(); }}
         className={cn(
           "fixed bottom-5 right-5 z-[70] inline-flex h-14 w-14 items-center justify-center rounded-full shadow-2xl shadow-pink-500/40 transition-all",
           open
             ? "bg-slate-700 text-white hover:bg-slate-600"
-            : "bg-gradient-to-br from-pink-500 via-rose-500 to-amber-400 text-white hover:scale-105"
+            : "bg-gradient-to-br from-pink-500 via-rose-500 to-amber-400 text-white hover:scale-105",
+          showIntro && !open && "ring-4 ring-pink-300/40 animate-pulse"
         )}
         aria-label={open ? t("common.close") : t("maritza.title")}
       >
