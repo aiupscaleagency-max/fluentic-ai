@@ -109,6 +109,20 @@ export async function signup(email: string, password: string, name: string): Pro
     }
     // Om data.session saknas (email-confirmation på): user finns i auth.users men
     // profil-raden skapas vid första login istället (backup nedan i login()).
+
+    // Skicka välkomst-mail i bakgrunden — tyst no-op om Resend inte är konfigurerat
+    void fetch("/api/email/welcome", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: profile.email,
+        name: profile.name,
+        uiLang: typeof window !== "undefined"
+          ? (window.localStorage.getItem("fluentic.ui-lang") ?? "sv")
+          : "sv",
+      }),
+    }).catch(() => { /* email-fel ska inte blockera signup */ });
+
     emit();
     return { user: profile, error: null };
   }

@@ -90,7 +90,28 @@ export default function PricingPage() {
       window.location.href = "/learn/es";
       return;
     }
-    alert(t("pricing.comingSoon"));
+
+    // Pro/Family — försök skapa Stripe Checkout-session
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier: id, userId: user.id, userEmail: user.email }),
+      });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      // Stripe inte konfigurerat (503) → visa "kommer snart"
+      if (res.status === 503) {
+        alert(t("pricing.comingSoon"));
+        return;
+      }
+      alert(`Fel: ${data.error ?? "okänt"}`);
+    } catch {
+      alert(t("pricing.comingSoon"));
+    }
   }
 
   return (
