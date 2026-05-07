@@ -12,6 +12,7 @@ import { useLevel } from "@/lib/use-level";
 import { useTracks } from "@/lib/track";
 import { useExplainLang } from "@/lib/explain-lang";
 import { usePersona } from "@/lib/personas";
+import { speakAi } from "@/lib/tts";
 
 interface Msg {
   role: "user" | "assistant";
@@ -85,13 +86,9 @@ export function Conversation({ lang }: { lang: LangCode }) {
   }
 
   function speak(text: string) {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
     // Vi pratar bara den första raden (målspråket) — andra raden är svensk översättning
     const firstLine = text.split("\n")[0] ?? text;
-    const utter = new SpeechSynthesisUtterance(firstLine);
-    utter.lang = language.bcp47;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utter);
+    void speakAi(firstLine, lang, { personaId: persona?.id, bcp47: language.bcp47 });
   }
 
   return (

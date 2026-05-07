@@ -11,6 +11,7 @@ import { addXP, loseHeart, getHearts, refillHearts } from "@/lib/storage";
 import { Dialog, DialogHeader, DialogTitle, DialogContent } from "../ui/dialog";
 import { Volume2, ChevronRight, Heart, CheckCircle2, XCircle, RotateCcw } from "lucide-react";
 import { useLevel } from "@/lib/use-level";
+import { speakAi } from "@/lib/tts";
 
 const SESSION_LEN = 8;
 
@@ -68,11 +69,8 @@ export function ListenPickGame({ lang }: { lang: LangCode }) {
   }, [current, allPhrases]);
 
   function speak() {
-    if (!current || typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const u = new SpeechSynthesisUtterance(current.text[lang]);
-    u.lang = language.bcp47;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
+    if (!current) return;
+    void speakAi(current.text[lang], lang, { bcp47: language.bcp47 });
   }
 
   // Auto-spela när ny fras visas (efter en kort delay så TTS-en hinner ladda)

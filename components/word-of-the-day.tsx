@@ -10,6 +10,7 @@ import type { LangCode } from "@/lib/languages";
 import { getLanguage } from "@/lib/languages";
 import { useLevel } from "@/lib/use-level";
 import { useT } from "@/lib/i18n";
+import { speakAi } from "@/lib/tts";
 
 // Visar dagens ord/fras med uttal-knapp. Pickar deterministiskt per dag.
 export function WordOfTheDay({ lang }: { lang: LangCode }) {
@@ -25,11 +26,8 @@ export function WordOfTheDay({ lang }: { lang: LangCode }) {
   if (!entry) return null;
 
   function speak() {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const u = new SpeechSynthesisUtterance(entry!.word);
-    u.lang = language.bcp47;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
+    if (!entry) return;
+    void speakAi(entry.word, lang, { bcp47: language.bcp47 });
   }
 
   return (

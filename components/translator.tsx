@@ -10,6 +10,8 @@ import { getLevel } from "@/lib/level";
 import { isValidLangCode } from "@/lib/languages";
 import { getTracks } from "@/lib/track";
 import { getExplainLang } from "@/lib/explain-lang";
+import { speakAi, ADISON_VOICE } from "@/lib/tts";
+import type { LangCode } from "@/lib/languages";
 
 // Tolken stödjer även "sv" som käll- och målspråk utöver MVP-fyran
 type TranslatorLang = "sv" | "es" | "en" | "fr" | "ar";
@@ -121,18 +123,16 @@ export function Translator() {
   }
 
   function speak(text: string, langBcp47: string, onEnd?: () => void) {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      onEnd?.();
-      return;
-    }
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = langBcp47;
-    if (onEnd) {
-      utter.onend = onEnd;
-      utter.onerror = onEnd;
-    }
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utter);
+    // Adison har en konsekvent röst oavsett målspråk så det känns som SAMMA tolk
+    // Lang-fältet används bara om vi måste falla tillbaka till Web Speech.
+    const fallbackLang: LangCode = (
+      isValidLangCode(langBcp47.slice(0, 2)) ? langBcp47.slice(0, 2) as LangCode : "en"
+    );
+    void speakAi(text, fallbackLang, {
+      voice: ADISON_VOICE,
+      bcp47: langBcp47,
+      onEnd,
+    });
   }
 
   function swap() {

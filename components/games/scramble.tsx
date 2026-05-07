@@ -12,6 +12,7 @@ import { Dialog, DialogHeader, DialogTitle, DialogContent } from "../ui/dialog";
 import { RotateCcw, ChevronRight, Heart, Volume2 } from "lucide-react";
 import { useLevel } from "@/lib/use-level";
 import { useTracks } from "@/lib/track";
+import { speakAi } from "@/lib/tts";
 
 // Vi väljer 8 ord per session vars måltext har 3-12 tecken (annars blir det jobbigt med tiles)
 const SESSION_LEN = 8;
@@ -95,11 +96,7 @@ export function ScrambleGame({ lang }: { lang: LangCode }) {
   }, [idx]);
 
   function speak(text: string) {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = language.bcp47;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
+    void speakAi(text, lang, { bcp47: language.bcp47 });
   }
 
   function handlePick(letter: Letter) {

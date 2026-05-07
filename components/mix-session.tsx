@@ -7,6 +7,7 @@ import { getVocab, type VocabEntry } from "@/lib/vocab";
 import { getPhrases, type Phrase } from "@/lib/phrases";
 import { useLevel } from "@/lib/use-level";
 import { useTracks } from "@/lib/track";
+import { speakAi } from "@/lib/tts";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -284,11 +285,7 @@ function FlashcardTurnView({
   const [answered, setAnswered] = React.useState(false);
 
   function speak() {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const u = new SpeechSynthesisUtterance(turn.entry.word);
-    u.lang = language.bcp47;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
+    void speakAi(turn.entry.word, lang, { bcp47: language.bcp47 });
   }
 
   return (
@@ -540,11 +537,7 @@ function ListenTurnView({
   const [picked, setPicked] = React.useState<string | null>(null);
 
   function speak() {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const u = new SpeechSynthesisUtterance(turn.phrase.text[lang]);
-    u.lang = langBcp47;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
+    void speakAi(turn.phrase.text[lang], lang, { bcp47: langBcp47 });
   }
 
   React.useEffect(() => {

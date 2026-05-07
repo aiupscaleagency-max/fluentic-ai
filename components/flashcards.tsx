@@ -13,6 +13,7 @@ import { Volume2, RotateCcw } from "lucide-react";
 import { useLevel } from "@/lib/use-level";
 import { useTracks } from "@/lib/track";
 import { useWordImage } from "@/lib/word-image";
+import { speakAi } from "@/lib/tts";
 
 export function Flashcards({ lang, lessonId }: { lang: LangCode; lessonId?: string }) {
   const language = getLanguage(lang)!;
@@ -57,12 +58,8 @@ export function Flashcards({ lang, lessonId }: { lang: LangCode; lessonId?: stri
   }
 
   function speak() {
-    if (!current || typeof window === "undefined") return;
-    if (!("speechSynthesis" in window)) return;
-    const utter = new SpeechSynthesisUtterance(current.word);
-    utter.lang = language.bcp47;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utter);
+    if (!current) return;
+    void speakAi(current.word, lang, { bcp47: language.bcp47 });
   }
 
   function restart() {

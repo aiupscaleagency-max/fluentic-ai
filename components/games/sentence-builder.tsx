@@ -10,6 +10,7 @@ import type { LangCode } from "@/lib/languages";
 import { getLanguage } from "@/lib/languages";
 import { useLevel } from "@/lib/use-level";
 import { PHRASES } from "@/lib/phrases";
+import { speakAi } from "@/lib/tts";
 import { addXP } from "@/lib/storage";
 import { useT } from "@/lib/i18n";
 
@@ -97,11 +98,7 @@ export function SentenceBuilder({ lang }: { lang: LangCode }) {
   }
 
   function speak() {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const u = new SpeechSynthesisUtterance(target);
-    u.lang = language.bcp47;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
+    void speakAi(target, lang, { bcp47: language.bcp47 });
   }
 
   // Räkna återstående tokens i bank — som inte redan används i picked (med multiplicitet)

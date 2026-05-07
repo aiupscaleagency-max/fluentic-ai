@@ -10,6 +10,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Mic, MicOff, Volume2, ChevronRight } from "lucide-react";
 import { similarityScore } from "@/lib/similarity";
+import { speakAi } from "@/lib/tts";
 import { addXP, markActivityDone } from "@/lib/storage";
 
 import { getSpeechRecognitionCtor, type SRInstance } from "@/lib/speech";
@@ -86,11 +87,7 @@ export function ListenRepeat({ lang, lessonId }: { lang: LangCode; lessonId?: st
   }, [lang, language.bcp47, target]);
 
   function speak() {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const utter = new SpeechSynthesisUtterance(target);
-    utter.lang = language.bcp47;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utter);
+    void speakAi(target, lang, { bcp47: language.bcp47 });
   }
 
   function toggleMic() {

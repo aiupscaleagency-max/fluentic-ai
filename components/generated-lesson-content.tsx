@@ -12,6 +12,7 @@ import { LESSONS, getLessonI18n } from "@/lib/lessons";
 import { useGeneratedLessonContent } from "@/lib/lesson-content";
 import { useT } from "@/lib/i18n";
 import { useUiLang } from "@/lib/ui-language";
+import { speakAi } from "@/lib/tts";
 
 // Visar lektions-specifikt vocab + phrases. Auto-genereras via Gemini om
 // vi inte redan har handgjord data. Cachas på server (tmpdir) + klient (localStorage).
@@ -30,11 +31,7 @@ export function GeneratedLessonContent({
   const { content, loading, error } = useGeneratedLessonContent(lessonId, lang);
 
   function speak(text: string) {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = language.bcp47;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
+    void speakAi(text, lang, { bcp47: language.bcp47 });
   }
 
   if (!lessonId || !lesson) {

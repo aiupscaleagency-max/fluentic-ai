@@ -15,6 +15,7 @@ import { useTracks } from "@/lib/track";
 import { useExplainLang } from "@/lib/explain-lang";
 
 import { getSpeechRecognitionCtor, type SRInstance } from "@/lib/speech";
+import { speakAi } from "@/lib/tts";
 
 interface AiFeedback {
   score: number;
@@ -83,11 +84,7 @@ export function Pronunciation({ lang }: { lang: LangCode }) {
   }, [lang, language.bcp47, target]);
 
   function speak() {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const utter = new SpeechSynthesisUtterance(target);
-    utter.lang = language.bcp47;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utter);
+    void speakAi(target, lang, { bcp47: language.bcp47 });
   }
 
   function toggleMic() {

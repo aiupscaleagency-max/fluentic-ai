@@ -11,6 +11,7 @@ import { useExplainLang } from "@/lib/explain-lang";
 import { addXP } from "@/lib/storage";
 import { usePersona } from "@/lib/personas";
 import { addSpokenSeconds } from "@/lib/spoken-time";
+import { speakAi } from "@/lib/tts";
 import { getSpeechRecognitionCtor, type SRInstance } from "@/lib/speech";
 import { cn } from "@/lib/cn";
 
@@ -238,30 +239,18 @@ export function VideoCall({
       }
       return;
     }
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      setState("idle");
-      return;
-    }
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = language.bcp47;
-    utter.rate = rate;
-    if (voiceURI) {
-      const v = voices.find((vv) => vv.voiceURI === voiceURI);
-      if (v) utter.voice = v;
-    } else {
-      const v = voices.find((vv) => vv.lang.toLowerCase().startsWith(language.bcp47.slice(0, 2)));
-      if (v) utter.voice = v;
-    }
-    utter.onstart = () => setState("speaking");
-    utter.onend = () => {
-      setState("idle");
-      if (autoRestart && !stoppedRef.current && !muted) {
-        setTimeout(startListening, 200);
-      }
-    };
-    utter.onerror = () => setState("idle");
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utter);
+    void speakAi(text, lang, {
+      personaId: userPersona?.id,
+      bcp47: language.bcp47,
+      onStart: () => setState("speaking"),
+      onEnd: () => {
+        setState("idle");
+        if (autoRestart && !stoppedRef.current && !muted) {
+          setTimeout(startListening, 200);
+        }
+      },
+      onError: () => setState("idle"),
+    });
   }
 
   function endCall() {
