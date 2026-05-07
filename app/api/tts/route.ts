@@ -113,7 +113,11 @@ export async function POST(req: Request) {
       model: "gemini-2.5-flash-preview-tts",
     });
 
-    const prompt = styleHint ? `${styleHint}\n${text}` : text;
+    // Gemini TTS kräver att vi explicit säger till modellen att tala.
+    // Utan en "Say:"-instruktion försöker den generera text och returnerar fel.
+    // styleHint kan ersätta default-instruktionen för specifik ton.
+    const instruction = styleHint || "Say naturally:";
+    const prompt = `${instruction} ${text}`;
 
     const resp = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
