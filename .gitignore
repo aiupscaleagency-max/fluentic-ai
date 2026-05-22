@@ -34,3 +34,7 @@ next-env.d.ts
 
 # Vercel
 .vercel
+
+# Claude Code per-projekt-state (privat, per-dator)
+.claude/
+graphify-out/
