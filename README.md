@@ -1,3 +1,7 @@
+---
+summary: Lär dig spanska, engelska, franska och arabiska — med AI-driven konversation, flashcards (spaced-repetition-light), uttalsträning, mini-spel
+---
+
 # Fluentic AI
 
 Lär dig spanska, engelska, franska och arabiska — med AI-driven konversation, flashcards (spaced-repetition-light), uttalsträning, mini-spel och en inbyggd tolk.

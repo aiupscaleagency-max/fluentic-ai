@@ -1,3 +1,34 @@
+---
+summary: Typ: Mikes eget dotterbolag (B2C språkapp)
+---
+
+# Fluentic AI — CLAUDE.md
+
+> **Typ:** Mikes eget dotterbolag (B2C språkapp)
+> **Global kontext:** `~/.claude/CLAUDE.md` + `~/ai_upscale_work/CLAUDE.md`
+> **Agent-registry:** `~/ai_upscale_work/AGENTS_REGISTRY.md`
+
+## Vad detta projekt är
+
+Fluentic AI är Mikes egen språkapp för spanska, business-engelska, franska och arabiska. Fokus på talat, vardagligt språk — inte formellt skriftspråk. Igång men ej lanserad.
+
+## Skills — alltid aktiva
+
+| Skill | När |
+|---|---|
+| `karpathy-ai-upscale` | Auto — all kodning |
+| `mike-aios-master` | Auto — Mikes kontext |
+| `llm-council` | "council this" / produkt-beslut |
+| `content-humanizer` | Allt in-app copy |
+| `app-store-optimization` | iOS/Android App Store |
+
+## Projekt-specifika regler
+
+- **Talat > skrivet** — vardagligt, naturligt språk alltid före formellt
+- Meningar ska låta som en människa säger dem högt
+- Lär genom konversation — inga grammatik-block i primär-flow
+- Spanska är prioriterat språk för MVP
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
