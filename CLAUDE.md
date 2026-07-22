@@ -6,7 +6,8 @@ summary: Typ: Mikes eget dotterbolag (B2C språkapp)
 
 > **Typ:** Mikes eget dotterbolag (B2C språkapp)
 > **Global kontext:** `~/.claude/CLAUDE.md` + `~/ai_upscale_work/CLAUDE.md`
-> **Agent-registry:** `~/ai_upscale_work/AGENTS_REGISTRY.md`
+> **Agent-registry:** `~/ai_upscale_work/_shared-brain/registries/AGENTS_REGISTRY.md`
+> **Mål/strategi/priser:** bor ENDAST i `~/ai_upscale_work/CLAUDE.md` — duplicera aldrig hit.
 
 ## Vad detta projekt är
 
